@@ -52,6 +52,7 @@ final class RefreshLoop {
                 }
                 let events = try await client.events(limit: 100)
                 await MainActor.run {
+                    let existingIDs = Set(store.events.map(\.id))
                     if let advisories {
                         store.advisoryStatus = advisories.malware
                     }
@@ -60,6 +61,13 @@ final class RefreshLoop {
                     }
                     store.events = Self.mergedEvents(existing: store.events, fresh: events)
                     store.digest = WeeklyDigest.build(stats: store.stats, events: store.events, blocklist: blocklist)
+                    if let blocked = events.first(where: { event in
+                        !existingIDs.contains(event.id) &&
+                            event.request.statusCode == 403 &&
+                            event.request.blockedBy != nil
+                    }) {
+                        store.malwareBlinkSignal = blocked.id
+                    }
                     notifier.notifyNewSecurityEvents(store.digest.vulnerableEvents, enabled: store.notificationsEnabled)
                 }
             } catch {

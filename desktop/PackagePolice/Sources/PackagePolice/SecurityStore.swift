@@ -69,6 +69,7 @@ final class SecurityStore: ObservableObject {
     @Published var stats: APIStats = .empty
     @Published var events: [PackageEvent] = []
     @Published var digest: WeeklyDigest = WeeklyDigest.build(stats: .empty, events: [], blocklist: Blocklist(entries: []))
+    @Published var malwareBlinkSignal: String?
     @Published var lastError: String?
     @Published var lastRestartAt: Date?
     @Published var lastChangedAt: Date = Date()

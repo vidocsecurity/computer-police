@@ -18,7 +18,6 @@ final class StatusItemController: NSObject {
     private var malwareBlinkTask: Task<Void, Never>?
     private var malwareBlinkDeadline: Date?
     private var malwareBlinkOn = true
-    private var lastMalwarePreventionCount = 0
 
     init(store: SecurityStore, protection: ProtectionController, refresh: @escaping () -> Void) {
         self.store = store
@@ -27,7 +26,6 @@ final class StatusItemController: NSObject {
         self.statusBar = .system
         self.statusItem = Self.makeStatusItem(statusBar: statusBar)
         self.lastKnownScreenCount = NSScreen.screens.count
-        self.lastMalwarePreventionCount = store.digest.malwarePreventionCount
         super.init()
         configurePopover()
         configureButton()
@@ -57,7 +55,6 @@ final class StatusItemController: NSObject {
 
     private func configureButton() {
         guard let button = statusItem.button else { return }
-        button.image = Self.makeMenuBarShieldImage()
         button.imagePosition = .imageOnly
         button.title = ""
         button.action = #selector(togglePopover)
@@ -66,7 +63,7 @@ final class StatusItemController: NSObject {
         statusItem.isVisible = true
     }
 
-    private static func makeMenuBarShieldImage() -> NSImage {
+    private static func makeMenuBarShieldImage(color: NSColor) -> NSImage {
         let image = NSImage(size: NSSize(width: 21, height: 21), flipped: false) { rect in
             let path = NSBezierPath()
             path.move(to: NSPoint(x: rect.midX, y: rect.maxY - 1.5))
@@ -89,11 +86,11 @@ final class StatusItemController: NSObject {
                 controlPoint1: NSPoint(x: rect.minX + 4.2, y: rect.maxY - 3.3),
                 controlPoint2: NSPoint(x: rect.midX - 3.2, y: rect.maxY - 2.0))
             path.close()
-            NSColor.black.setFill()
+            color.setFill()
             path.fill()
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = false
         return image
     }
 
@@ -104,7 +101,12 @@ final class StatusItemController: NSObject {
             .store(in: &cancellables)
         store.$digest
             .receive(on: RunLoop.main)
-            .sink { [weak self] digest in self?.handleDigestChanged(digest) }
+            .sink { [weak self] _ in self?.updateIcon() }
+            .store(in: &cancellables)
+        store.$malwareBlinkSignal
+            .compactMap { $0 }
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.startMalwareBlink() }
             .store(in: &cancellables)
     }
 
@@ -122,20 +124,10 @@ final class StatusItemController: NSObject {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        if button.image == nil {
-            button.image = Self.makeMenuBarShieldImage()
-        }
-        button.contentTintColor = displayedIconColor
+        button.image = Self.makeMenuBarShieldImage(color: displayedIconColor)
+        button.alphaValue = malwareBlinkTask == nil || malwareBlinkOn ? 1.0 : 0.18
         button.toolTip = "Package Police: \(store.protectionState.title)"
         statusItem.isVisible = true
-    }
-
-    private func handleDigestChanged(_ digest: WeeklyDigest) {
-        if digest.malwarePreventionCount > lastMalwarePreventionCount {
-            startMalwareBlink()
-        }
-        lastMalwarePreventionCount = digest.malwarePreventionCount
-        updateIcon()
     }
 
     private func startMalwareBlink() {
@@ -252,7 +244,7 @@ final class StatusItemController: NSObject {
 
     private var displayedIconColor: NSColor {
         guard malwareBlinkTask != nil else { return iconColor }
-        return malwareBlinkOn ? .systemRed : .labelColor
+        return .systemRed
     }
 
     deinit {

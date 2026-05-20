@@ -55,7 +55,8 @@ final class EventStreamLoop {
         store.events = RefreshLoop.mergedEvents(existing: store.events, fresh: [event])
         store.digest = WeeklyDigest.build(stats: store.stats, events: store.events, blocklist: blocklist)
         notifier.notifyNewSecurityEvents(store.digest.vulnerableEvents, enabled: store.notificationsEnabled)
-        if event.request.statusCode == 403 {
+        if event.request.statusCode == 403, event.request.blockedBy != nil {
+            store.malwareBlinkSignal = event.id
             refresh()
         }
     }
