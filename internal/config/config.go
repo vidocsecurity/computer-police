@@ -28,7 +28,7 @@ type Config struct {
 }
 
 func Init(out io.Writer, opts InitOptions) error {
-	fmt.Fprintln(out, "Vidoc Agent Guard will install lightweight package-manager shims.")
+	fmt.Fprintln(out, "Package Police Agent Guard will install lightweight package-manager shims.")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Will collect: package names and versions, lockfile/package.json hashes, repo metadata, timestamp, and package-manager command metadata.")
 	fmt.Fprintln(out, "Will not collect: source code, secrets, .env files, package contents, terminal output, or environment variable values.")
@@ -75,9 +75,9 @@ func Init(out io.Writer, opts InitOptions) error {
 		if changed, err := patchShellProfile(); err != nil {
 			return err
 		} else if changed {
-			fmt.Fprintln(out, "Updated shell profile with Vidoc shims PATH entry.")
+			fmt.Fprintln(out, "Updated shell profile with Package Police shims PATH entry.")
 		} else {
-			fmt.Fprintln(out, "Shell profile already contains Vidoc shims PATH entry.")
+			fmt.Fprintln(out, "Shell profile already contains Package Police shims PATH entry.")
 		}
 	} else {
 		fmt.Fprintf(out, "Add this to PATH before package managers if needed: export PATH=\"%s:$PATH\"\n", paths.ShimsDir())
@@ -105,7 +105,7 @@ func Uninstall(out io.Writer, opts UninstallOptions) error {
 	if err := unpatchShellProfile(); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "Removed Vidoc PATH marker from shell profile when present.")
+	fmt.Fprintln(out, "Removed Package Police PATH marker from shell profile when present.")
 	if opts.DeleteLedger {
 		if err := os.Remove(paths.LedgerPath()); err == nil {
 			fmt.Fprintf(out, "Deleted ledger: %s\n", paths.LedgerPath())
@@ -141,7 +141,7 @@ func WriteConfig(cfg Config) error {
 	b.WriteString("agent_guard:\n")
 	b.WriteString("  enabled: true\n")
 	b.WriteString("  mode: local-only\n")
-	b.WriteString("  ledger_path: \"~/.vidoc/install-ledger/events.ndjson\"\n")
+	b.WriteString("  ledger_path: \"~/.package-police/install-ledger/events.ndjson\"\n")
 	b.WriteString("  collect:\n")
 	b.WriteString("    package_names: true\n    package_versions: true\n    lockfile_hashes: true\n    repo_metadata: true\n    command_metadata: true\n")
 	b.WriteString("    source_code: false\n    env_values: false\n    terminal_output: false\n")
@@ -190,7 +190,7 @@ func Load() Config {
 
 func patchShellProfile() (bool, error) {
 	profile := filepath.Join(os.Getenv("HOME"), ".zshrc")
-	marker := "# Vidoc Agent Guard shims"
+	marker := "# Package Police Agent Guard shims"
 	line := marker + "\nexport PATH=\"" + paths.ShimsDir() + ":$PATH\"\n"
 	data, _ := os.ReadFile(profile)
 	if strings.Contains(string(data), marker) {
@@ -219,7 +219,7 @@ func unpatchShellProfile() error {
 			skipNext = false
 			continue
 		}
-		if line == "# Vidoc Agent Guard shims" {
+		if line == "# Package Police Agent Guard shims" {
 			skipNext = true
 			continue
 		}

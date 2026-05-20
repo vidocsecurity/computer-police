@@ -29,7 +29,7 @@ func StartBackground(out io.Writer, opts ServerOptions) error {
 	opts = opts.withDefaults()
 	status := ReadStatus()
 	if status.Running {
-		fmt.Fprintf(out, "Vidoc registry proxy already running at http://%s\n", status.Address)
+		fmt.Fprintf(out, "Package Police registry proxy already running at http://%s\n", status.Address)
 		return nil
 	}
 	exe, err := os.Executable()
@@ -58,14 +58,14 @@ func StartBackground(out io.Writer, opts ServerOptions) error {
 		return fmt.Errorf("proxy process started with pid %d but did not become reachable: %w", cmd.Process.Pid, err)
 	}
 	_ = cmd.Process.Release()
-	fmt.Fprintf(out, "Started Vidoc registry proxy at http://%s:%d\n", opts.Host, opts.Port)
+	fmt.Fprintf(out, "Started Package Police registry proxy at http://%s:%d\n", opts.Host, opts.Port)
 	return nil
 }
 
 func Stop(out io.Writer) error {
 	status := readStatusFile()
 	if status.PID == 0 {
-		fmt.Fprintln(out, "Vidoc registry proxy is not running.")
+		fmt.Fprintln(out, "Package Police registry proxy is not running.")
 		return nil
 	}
 	process, err := os.FindProcess(status.PID)
@@ -84,7 +84,7 @@ func Stop(out io.Writer) error {
 		_ = process.Kill()
 	}
 	_ = os.Remove(paths.RegistryProxyPIDPath())
-	fmt.Fprintln(out, "Stopped Vidoc registry proxy.")
+	fmt.Fprintln(out, "Stopped Package Police registry proxy.")
 	return nil
 }
 
@@ -104,7 +104,7 @@ func ReadStatus() Status {
 
 func Doctor(out io.Writer) error {
 	status := ReadStatus()
-	fmt.Fprintln(out, "Vidoc Local Registry Proxy")
+	fmt.Fprintln(out, "Package Police Local Registry Proxy")
 	if status.Running {
 		fmt.Fprintf(out, "✓ proxy running: http://%s (pid %d)\n", status.Address, status.PID)
 	} else {
@@ -133,7 +133,7 @@ func Doctor(out io.Writer) error {
 	}
 	events, err := readLastEvents(5)
 	if err == nil && len(events) > 0 {
-		fmt.Fprintf(out, "✓ recent proxy events: %d shown by `vidoc proxy events`\n", len(events))
+		fmt.Fprintf(out, "✓ recent proxy events: %d shown by `package-police proxy events`\n", len(events))
 	} else {
 		fmt.Fprintln(out, "• recent proxy events: none")
 	}

@@ -148,20 +148,20 @@ func readExisting(path string) (string, bool, error) {
 }
 
 func backupOriginal(path, content string, existed bool) error {
-	backup := path + ".vidoc-backup"
-	marker := path + ".vidoc-created"
+	backup := path + ".package-police-backup"
+	marker := path + ".package-police-created"
 	if _, err := os.Stat(backup); err == nil {
 		return nil
 	}
 	if existed {
 		return os.WriteFile(backup, []byte(content), 0o644)
 	}
-	return os.WriteFile(marker, []byte("created by vidoc registry proxy\n"), 0o644)
+	return os.WriteFile(marker, []byte("created by package-police registry proxy\n"), 0o644)
 }
 
 func restoreFile(path string) error {
-	backup := path + ".vidoc-backup"
-	marker := path + ".vidoc-created"
+	backup := path + ".package-police-backup"
+	marker := path + ".package-police-created"
 	if data, err := os.ReadFile(backup); err == nil {
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			return err

@@ -6,19 +6,19 @@ import (
 )
 
 func Home() string {
-	if home := os.Getenv("VIDOC_HOME"); home != "" {
+	if home := os.Getenv("PACKAGE_POLICE_HOME"); home != "" {
 		return home
 	}
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".vidoc")
+		return filepath.Join(home, ".package-police")
 	}
-	return ".vidoc"
+	return ".package-police"
 }
 
 func ShimsDir() string { return filepath.Join(Home(), "shims") }
 
 func LedgerPath() string {
-	if path := os.Getenv("VIDOC_LEDGER_PATH"); path != "" {
+	if path := os.Getenv("PACKAGE_POLICE_LEDGER_PATH"); path != "" {
 		return path
 	}
 	return filepath.Join(Home(), "install-ledger", "events.ndjson")

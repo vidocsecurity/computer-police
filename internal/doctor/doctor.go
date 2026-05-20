@@ -42,7 +42,7 @@ func Run(out io.Writer, jsonOut bool) error {
 		enc.SetIndent("", "  ")
 		return enc.Encode(report)
 	}
-	fmt.Fprintln(out, "Vidoc Passive Dependency Observer")
+	fmt.Fprintln(out, "Package Police Passive Dependency Observer")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Observer:")
 	fmt.Fprintf(out, "✓ mode: %s\n", report.Mode)
@@ -86,9 +86,9 @@ func buildReport() Report {
 		CurrentRepo:         repo,
 		LastSnapshot:        observer.LastSnapshotTime(repo),
 		LedgerWritable:      ledgerWritable(),
-		AgentsMD:            fileContains("AGENTS.md", "Vidoc Passive Dependency Observer"),
-		CursorRule:          exists(filepath.Join(".cursor", "rules", "vidoc-passive-dependency-observer.mdc")),
-		AgentSkill:          exists(filepath.Join(".agents", "skills", "vidoc-passive-dependency-observer", "SKILL.md")),
+		AgentsMD:            fileContains("AGENTS.md", "Package Police Passive Dependency Observer"),
+		CursorRule:          exists(filepath.Join(".cursor", "rules", "package-police-passive-dependency-observer.mdc")),
+		AgentSkill:          exists(filepath.Join(".agents", "skills", "package-police-passive-dependency-observer", "SKILL.md")),
 		Privacy: Privacy{
 			Mode:                    "local-only",
 			SourceCodeCollected:     false,

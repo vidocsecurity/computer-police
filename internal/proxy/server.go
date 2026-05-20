@@ -152,7 +152,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func RunForeground(out io.Writer, opts ServerOptions) error {
 	opts = opts.withDefaults()
 	if opts.Host == "0.0.0.0" || opts.Host == "::" {
-		fmt.Fprintf(out, "warning: binding Vidoc registry proxy to %s exposes it beyond loopback\n", opts.Host)
+		fmt.Fprintf(out, "warning: binding Package Police registry proxy to %s exposes it beyond loopback\n", opts.Host)
 	}
 	handler, err := NewRegistryProxy(opts.Upstream, AllowAllInspector{})
 	if err != nil {
@@ -168,7 +168,7 @@ func RunForeground(out io.Writer, opts ServerOptions) error {
 		return err
 	}
 	defer os.Remove(paths.RegistryProxyPIDPath())
-	fmt.Fprintf(out, "Vidoc registry proxy listening on http://%s\n", listener.Addr().String())
+	fmt.Fprintf(out, "Package Police registry proxy listening on http://%s\n", listener.Addr().String())
 	server := &http.Server{Handler: handler}
 	return server.Serve(listener)
 }

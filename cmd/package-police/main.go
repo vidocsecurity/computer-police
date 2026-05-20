@@ -168,7 +168,7 @@ func runAgentGuard(args []string) error {
 	}
 	switch args[0] {
 	case "init":
-		fmt.Fprintln(os.Stdout, "Vidoc Agent Guard shims are superseded by the passive dependency observer.")
+		fmt.Fprintln(os.Stdout, "Package Police Agent Guard shims are superseded by the passive dependency observer.")
 		fmt.Fprintln(os.Stdout, "No package-manager wrappers or PATH changes will be installed.")
 		if hasFlag(args[1:], "--repo") {
 			return observer.InitRepo(os.Stdout)
@@ -206,27 +206,27 @@ func runLedger(args []string) error {
 }
 
 func printHelp() {
-	fmt.Println(`Vidoc Passive Dependency Observer
+	fmt.Println(`Package Police Passive Dependency Observer
 
 Usage:
-  vidoc onboard [--bun]
-  vidoc install [--bun]
-  vidoc uninstall [--bun]
-  vidoc proxy start [--host 127.0.0.1] [--port 4873]
-  vidoc proxy enable --project [--bun]
-  vidoc proxy disable --project [--bun]
-  vidoc proxy doctor
-  vidoc proxy events [--limit N]
-  vidoc observe here
-  vidoc observe init --repo
-  vidoc observe add <path> [--recursive] [--max-depth N]
-  vidoc observe list
-  vidoc observe remove <path-or-id>
-  vidoc snapshot create
-  vidoc snapshot collect
-  vidoc doctor [--json]
-  vidoc ledger list [--limit N] [--repo current] [--package NAME]
-  vidoc ledger search <package>
+  package-police onboard [--bun]
+  package-police install [--bun]
+  package-police uninstall [--bun]
+  package-police proxy start [--host 127.0.0.1] [--port 4873]
+  package-police proxy enable --project [--bun]
+  package-police proxy disable --project [--bun]
+  package-police proxy doctor
+  package-police proxy events [--limit N]
+  package-police observe here
+  package-police observe init --repo
+  package-police observe add <path> [--recursive] [--max-depth N]
+  package-police observe list
+  package-police observe remove <path-or-id>
+  package-police snapshot create
+  package-police snapshot collect
+  package-police doctor [--json]
+  package-police ledger list [--limit N] [--repo current] [--package NAME]
+  package-police ledger search <package>
 
 Local-only MVP: records JavaScript dependency file state changes and can route npm-compatible registry traffic through a local pass-through proxy without wrapping package managers.`)
 	_ = agentdist.SectionMarker

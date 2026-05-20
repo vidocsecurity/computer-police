@@ -8,8 +8,8 @@ import (
 
 func TestSnapshotCollectRecordsDependencyChange(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("VIDOC_HOME", filepath.Join(home, ".vidoc"))
-	t.Setenv("VIDOC_NO_WATCH", "1")
+	t.Setenv("PACKAGE_POLICE_HOME", filepath.Join(home, ".package-police"))
+	t.Setenv("PACKAGE_POLICE_NO_WATCH", "1")
 	project := t.TempDir()
 	chdir(t, project)
 	write(t, "package.json", `{"name":"app","version":"1.0.0","dependencies":{}}`)
@@ -24,7 +24,7 @@ func TestSnapshotCollectRecordsDependencyChange(t *testing.T) {
 	if err := SnapshotCollect(discard{}); err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(filepath.Join(home, ".vidoc", "install-ledger", "events.ndjson"))
+	data, err := os.ReadFile(filepath.Join(home, ".package-police", "install-ledger", "events.ndjson"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,8 +57,8 @@ func TestDiscoverIgnoresNodeModules(t *testing.T) {
 
 func TestReconcileDiscoversNewProjectUnderObservedRoot(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("VIDOC_HOME", filepath.Join(home, ".vidoc"))
-	t.Setenv("VIDOC_NO_WATCH", "1")
+	t.Setenv("PACKAGE_POLICE_HOME", filepath.Join(home, ".package-police"))
+	t.Setenv("PACKAGE_POLICE_NO_WATCH", "1")
 	root := t.TempDir()
 	if err := Add(discard{}, root, true, 8); err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestReconcileDiscoversNewProjectUnderObservedRoot(t *testing.T) {
 	if err := Reconcile(discard{}, "periodic_scan"); err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(filepath.Join(home, ".vidoc", "install-ledger", "events.ndjson"))
+	data, err := os.ReadFile(filepath.Join(home, ".package-police", "install-ledger", "events.ndjson"))
 	if err != nil {
 		t.Fatal(err)
 	}

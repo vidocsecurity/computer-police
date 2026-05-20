@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-func TestFindRealBinarySkipsVidocShims(t *testing.T) {
+func TestFindRealBinarySkipsPackagePoliceShims(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("VIDOC_HOME", home)
+	t.Setenv("PACKAGE_POLICE_HOME", home)
 	realDir := filepath.Join(t.TempDir(), "bin")
 	shimDir := filepath.Join(home, "shims")
 	if err := os.MkdirAll(realDir, 0o755); err != nil {
