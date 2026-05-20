@@ -147,7 +147,7 @@ If package-manager shims are missing, run:
 package-police agent-guard init
 ` + "```" + `
 
-Use normal package-manager commands after Vidoc is active:
+Use normal package-manager commands after Package Police is active:
 
 ` + "```bash" + `
 npm install
@@ -179,7 +179,7 @@ Before running npm, pnpm, yarn, or bun install/update/add/remove commands, run `
 
 If shims are missing, run ` + "`package-police agent-guard init`" + `.
 
-After Vidoc is active, use normal package-manager commands. Do not bypass Package Police shims unless explicitly instructed by the user.
+After Package Police is active, use normal package-manager commands. Do not bypass Package Police shims unless explicitly instructed by the user.
 `
 	return writeIfDifferent(path, body)
 }
@@ -198,7 +198,7 @@ When working in a JavaScript or TypeScript project:
 1. Check whether Package Police Agent Guard is active before package install/update/add/remove commands.
 2. Use ` + "`package-police doctor`" + ` to inspect status.
 3. If shims are missing, ask to run ` + "`package-police agent-guard init`" + `.
-4. After Vidoc is active, use normal package-manager commands.
+4. After Package Police is active, use normal package-manager commands.
 5. Do not bypass Package Police shims unless the user explicitly asks.
 
 Package Police Agent Guard records package names and versions installed during package-manager commands for future supply-chain incident response. It does not block installs or scan malware in the MVP.

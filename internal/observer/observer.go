@@ -325,7 +325,7 @@ func Reconcile(out io.Writer, source string) error {
 }
 
 func StartWatcher(out io.Writer) error {
-	if os.Getenv("PACKAGE_POLICE_NO_WATCH") == "1" {
+	if os.Getenv("PACKAGE_POLICE_NO_WATCH") == "1" || os.Getenv("VIDOC_NO_WATCH") == "1" {
 		fmt.Fprintln(out, "Passive watcher not started: PACKAGE_POLICE_NO_WATCH=1")
 		return nil
 	}

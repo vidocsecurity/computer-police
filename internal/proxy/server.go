@@ -121,7 +121,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	decision := p.inspector.Inspect(r, info)
 	if !decision.Allowed {
 		status = http.StatusForbidden
-		http.Error(w, "blocked by Vidoc registry policy", status)
+		http.Error(w, "blocked by Package Police registry policy", status)
 		return
 	}
 
