@@ -45,12 +45,16 @@ final class RefreshLoop {
                 }
             }
             do {
+                let advisories = try? await client.advisories()
                 let statsResult = try await client.stats(ifNoneMatch: etag)
                 if let next = statsResult.etag {
                     etag = next
                 }
                 let events = try await client.events(limit: 100)
                 await MainActor.run {
+                    if let advisories {
+                        store.advisoryStatus = advisories.malware
+                    }
                     if let stats = statsResult.stats {
                         store.stats = stats
                     }

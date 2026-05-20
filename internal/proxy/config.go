@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -120,28 +121,68 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 }
 
 func executableExists(name string) bool {
-	_, err := exec.LookPath(name)
-	return err == nil
+	_, ok := resolveExecutable(name)
+	return ok
 }
 
 func bunAvailable() bool {
-	if executableExists("bun") {
+	_, ok := resolveExecutable("bun", bunExecutableFallbacks()...)
+	return ok
+}
+
+func resolveExecutable(name string, fallbackPaths ...string) (string, bool) {
+	if path, err := exec.LookPath(name); err == nil {
+		return path, true
+	}
+	for _, path := range fallbackPaths {
+		if executableFile(path) {
+			return path, true
+		}
+	}
+	return "", false
+}
+
+func executableFile(path string) bool {
+	if path == "" {
+		return false
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() {
+		return false
+	}
+	if runtime.GOOS == "windows" {
 		return true
 	}
+	return info.Mode()&0o111 != 0
+}
+
+func bunExecutableFallbacks() []string {
 	home, _ := os.UserHomeDir()
-	for _, path := range []string{
-		filepath.Join(home, ".bun/bin/bun"),
-		"/opt/homebrew/bin/bun",
-		"/usr/local/bin/bun",
-	} {
-		if path == "" {
-			continue
-		}
-		if info, err := os.Stat(path); err == nil && !info.IsDir() && info.Mode()&0o111 != 0 {
-			return true
-		}
+	var paths []string
+	if install := os.Getenv("BUN_INSTALL"); install != "" {
+		paths = append(paths, filepath.Join(install, "bin", executableName("bun")))
 	}
-	return false
+	if home != "" {
+		paths = append(paths, filepath.Join(home, ".bun", "bin", executableName("bun")))
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		paths = append(paths,
+			"/opt/homebrew/bin/bun",
+			"/usr/local/bin/bun")
+	case "linux":
+		paths = append(paths,
+			"/usr/local/bin/bun",
+			"/usr/bin/bun")
+	}
+	return paths
+}
+
+func executableName(name string) string {
+	if runtime.GOOS == "windows" {
+		return name + ".exe"
+	}
+	return name
 }
 
 func setNPMRC(path, registry string) error {
@@ -280,19 +321,27 @@ func userNPMRCPath() (string, error) {
 }
 
 func userBunfigPath() (string, error) {
-	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		path := filepath.Join(xdg, "bun", "bunfig.toml")
-		if _, err := os.Stat(path); err == nil {
-			return path, nil
-		}
-		legacyPath := filepath.Join(xdg, ".bunfig.toml")
-		if _, err := os.Stat(legacyPath); err == nil {
-			return legacyPath, nil
-		}
-	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
+	}
+	candidates := []string{}
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		candidates = append(candidates,
+			filepath.Join(xdg, "bun", "bunfig.toml"),
+			filepath.Join(xdg, ".bunfig.toml"))
+	}
+	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
+		candidates = append(candidates, filepath.Join(configDir, "bun", "bunfig.toml"))
+	}
+	candidates = append(candidates, filepath.Join(home, ".bunfig.toml"))
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+	if runtime.GOOS == "windows" && len(candidates) > 0 {
+		return candidates[0], nil
 	}
 	return filepath.Join(home, ".bunfig.toml"), nil
 }

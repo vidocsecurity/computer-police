@@ -12,7 +12,7 @@ struct ProtectionToggleView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Protection: \(store.protectionState.title)")
                     .font(.title3.bold())
-                Text(store.protectionState.detail)
+                Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -44,5 +44,19 @@ struct ProtectionToggleView: View {
         case .failed: return .red
         case .off: return .secondary
         }
+    }
+
+    private var detail: String {
+        if case .starting = store.protectionState,
+           let status = store.advisoryStatus,
+           status.state == "syncing"
+        {
+            if let total = status.totalBytes, total > 0, let downloaded = status.downloadedBytes {
+                let percent = Int((Double(downloaded) / Double(total) * 100).rounded())
+                return "Downloading malware advisories (\(min(percent, 100))%)."
+            }
+            return "Downloading malware advisories."
+        }
+        return store.protectionState.detail
     }
 }

@@ -49,6 +49,9 @@ struct RegistryConfigProbe {
             paths.append((xdg as NSString).appendingPathComponent("bun/bunfig.toml"))
             paths.append((xdg as NSString).appendingPathComponent(".bunfig.toml"))
         }
+        if let configDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            paths.append(configDirectory.appendingPathComponent("bun/bunfig.toml").path)
+        }
         paths.append(fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".bunfig.toml").path)
         return paths
     }

@@ -2,7 +2,7 @@
 
 Package Police is a local npm-compatible registry proxy plus a macOS menu-bar frontend.
 
-The proxy records local package install traffic in `~/.package-police/registry-proxy/events.ndjson` and exposes read-only JSON endpoints on the same loopback listener:
+The proxy records local package install traffic in `~/.package-police/registry-proxy/events.ndjson`, blocks npm package versions that match current-year OSV `MAL-*` advisories, and exposes read-only JSON endpoints on the same loopback listener:
 
 - `GET /api/health`
 - `GET /api/events?limit=50`
@@ -37,3 +37,5 @@ package-police proxy stop
 ```
 
 Current registry integration supports npm and bun.
+
+Malware advisory data is cached at `~/.package-police/registry-proxy/malware-advisories.json` and refreshed from the OSV npm snapshot every 10 minutes. For local testing, set `PACKAGE_POLICE_OSV_ADVISORY_DIR` to a directory of OSV-format JSON advisories; those advisories are layered onto the cache.

@@ -22,3 +22,7 @@ func RegistryProxyPIDPath() string { return filepath.Join(RegistryProxyDir(), "p
 func RegistryProxyEventsPath() string { return filepath.Join(RegistryProxyDir(), "events.ndjson") }
 
 func RegistryProxyLogPath() string { return filepath.Join(RegistryProxyDir(), "proxy.log") }
+
+func RegistryProxyAdvisoryCachePath() string {
+	return filepath.Join(RegistryProxyDir(), "malware-advisories.json")
+}

@@ -65,6 +65,7 @@ final class SecurityStore: ObservableObject {
     @Published var proxyStatus: ProxyStatus = .stopped
     @Published var registryStatus: RegistryStatus = .disabled
     @Published var health: APIHealth?
+    @Published var advisoryStatus: MalwareAdvisoryStatus?
     @Published var stats: APIStats = .empty
     @Published var events: [PackageEvent] = []
     @Published var digest: WeeklyDigest = WeeklyDigest.build(stats: .empty, events: [], blocklist: Blocklist(entries: []))

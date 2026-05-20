@@ -44,9 +44,14 @@ type Inspector interface {
 	Inspect(*http.Request, RequestInfo) Decision
 }
 
+type ResponseInspector interface {
+	InspectResponse(*http.Request, RequestInfo, *http.Response, []byte) Decision
+}
+
 type Decision struct {
-	Allowed bool
-	Reason  string
+	Allowed   bool
+	Reason    string
+	BlockedBy string
 }
 
 type AllowAllInspector struct{}
@@ -91,6 +96,8 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	info := classifyRequest(r.URL.Path)
 	status := http.StatusBadGateway
+	var blockReason string
+	var blockedBy string
 	defer func() {
 		event := Event{
 			SchemaVersion: "1.0",
@@ -99,13 +106,15 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Timestamp:     time.Now().UTC().Format(time.RFC3339Nano),
 			Source:        "local_registry_proxy",
 			Request: EventRequest{
-				Method:     r.Method,
-				Path:       requestPath(r),
-				Type:       info.Type,
-				Package:    info.Package,
-				Version:    info.Version,
-				StatusCode: status,
-				DurationMS: time.Since(start).Milliseconds(),
+				Method:      r.Method,
+				Path:        requestPath(r),
+				Type:        info.Type,
+				Package:     info.Package,
+				Version:     info.Version,
+				StatusCode:  status,
+				DurationMS:  time.Since(start).Milliseconds(),
+				BlockedBy:   blockedBy,
+				BlockReason: blockReason,
 			},
 			Upstream: EventUpstream{Registry: p.upstream.String()},
 			Client: EventClient{
@@ -121,6 +130,8 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	decision := p.inspector.Inspect(r, info)
 	if !decision.Allowed {
 		status = http.StatusForbidden
+		blockReason = decision.Reason
+		blockedBy = decision.BlockedBy
 		http.Error(w, "blocked by Package Police registry policy", status)
 		return
 	}
@@ -143,10 +154,41 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	if responseInspector, ok := p.inspector.(ResponseInspector); ok && shouldInspectResponse(info, resp) {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			status = http.StatusBadGateway
+			http.Error(w, err.Error(), status)
+			return
+		}
+		decision := responseInspector.InspectResponse(r, info, resp, body)
+		if !decision.Allowed {
+			status = http.StatusForbidden
+			blockReason = decision.Reason
+			blockedBy = decision.BlockedBy
+			http.Error(w, "blocked by Package Police registry policy", status)
+			return
+		}
+		status = resp.StatusCode
+		copyHeaders(w.Header(), resp.Header)
+		w.Header().Del("Content-Length")
+		w.WriteHeader(resp.StatusCode)
+		_, _ = w.Write(body)
+		return
+	}
+
 	status = resp.StatusCode
 	copyHeaders(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	_, _ = io.Copy(w, resp.Body)
+}
+
+func shouldInspectResponse(info RequestInfo, resp *http.Response) bool {
+	if info.Type != "metadata" || resp.StatusCode >= 400 {
+		return false
+	}
+	contentType := strings.ToLower(resp.Header.Get("Content-Type"))
+	return strings.Contains(contentType, "json") || contentType == ""
 }
 
 func RunForeground(out io.Writer, opts ServerOptions) error {
@@ -154,7 +196,9 @@ func RunForeground(out io.Writer, opts ServerOptions) error {
 	if opts.Host == "0.0.0.0" || opts.Host == "::" {
 		fmt.Fprintf(out, "warning: binding Package Police registry proxy to %s exposes it beyond loopback\n", opts.Host)
 	}
-	handler, err := NewRegistryProxy(opts.Upstream, AllowAllInspector{})
+	advisoryStore := NewMalwareAdvisoryStoreFromEnv()
+	advisoryStore.StartBackgroundRefresh(context.Background())
+	handler, err := NewRegistryProxy(opts.Upstream, &MalwareInspector{store: advisoryStore})
 	if err != nil {
 		return err
 	}
@@ -170,7 +214,7 @@ func RunForeground(out io.Writer, opts ServerOptions) error {
 	defer os.Remove(paths.RegistryProxyPIDPath())
 	fmt.Fprintf(out, "Package Police registry proxy listening on http://%s\n", listener.Addr().String())
 	mux := http.NewServeMux()
-	mountAPIHandlers(mux)
+	mountAPIHandlers(mux, advisoryStore)
 	mux.Handle("/", handler)
 	server := &http.Server{Handler: mux}
 	return server.Serve(listener)

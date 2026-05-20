@@ -43,16 +43,23 @@ type apiStatsResponse struct {
 	LastUpdatedAt string          `json:"last_updated_at,omitempty"`
 }
 
+type apiAdvisoriesResponse struct {
+	Malware MalwareAdvisoryStatus `json:"malware"`
+}
+
 type apiTopPackage struct {
 	Package string `json:"package"`
 	Version string `json:"version,omitempty"`
 	Count   int    `json:"count"`
 }
 
-func mountAPIHandlers(mux *http.ServeMux) {
+func mountAPIHandlers(mux *http.ServeMux, advisoryStore *MalwareAdvisoryStore) {
 	mux.HandleFunc("/api/health", apiLoopbackOnly(apiMethod(http.MethodGet, apiHealth)))
 	mux.HandleFunc("/api/events", apiLoopbackOnly(apiMethod(http.MethodGet, apiEvents)))
 	mux.HandleFunc("/api/stats", apiLoopbackOnly(apiMethod(http.MethodGet, apiStats)))
+	if advisoryStore != nil {
+		mux.HandleFunc("/api/advisories", apiLoopbackOnly(apiMethod(http.MethodGet, apiAdvisories(advisoryStore))))
+	}
 }
 
 func apiMethod(method string, next http.HandlerFunc) http.HandlerFunc {
@@ -145,6 +152,12 @@ func apiStats(w http.ResponseWriter, r *http.Request) {
 		stats = emptyStats(start, end, windowName)
 	}
 	writeJSON(w, http.StatusOK, stats)
+}
+
+func apiAdvisories(store *MalwareAdvisoryStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, apiAdvisoriesResponse{Malware: store.Status()})
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

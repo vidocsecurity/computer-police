@@ -33,6 +33,10 @@ public final class APIClient: @unchecked Sendable {
         try await get(APIHealth.self, path: "/api/health")
     }
 
+    public func advisories() async throws -> APIAdvisories {
+        try await get(APIAdvisories.self, path: "/api/advisories")
+    }
+
     public func events(limit: Int = 100) async throws -> [PackageEvent] {
         var components = URLComponents(url: url(path: "/api/events"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "limit", value: String(limit))]

@@ -12,9 +12,13 @@ struct DiagnosticsView: View {
                 row("Binary", store.binaryStatus.rawValue)
                 row("Proxy", store.proxyStatus.rawValue)
                 row("Registry", store.registryStatus.rawValue)
+                row("Malware advisories", advisorySummary)
                 row("PID", store.health.map { String($0.pid) } ?? "-")
                 row("Address", store.health?.address ?? "127.0.0.1:4873")
                 row("Ledger", store.stats.ledgerPath.isEmpty ? "~/.package-police/registry-proxy/events.ndjson" : store.stats.ledgerPath)
+                if let cachePath = store.advisoryStatus?.cachePath, !cachePath.isEmpty {
+                    row("Advisory cache", cachePath)
+                }
                 if let restarted = store.lastRestartAt {
                     row("Last restart", restarted.formatted(date: .omitted, time: .standard))
                 }
@@ -41,5 +45,20 @@ struct DiagnosticsView: View {
                 .lineLimit(3)
         }
         .font(.caption)
+    }
+
+    private var advisorySummary: String {
+        guard let status = store.advisoryStatus else { return "Unknown" }
+        if status.state == "syncing" {
+            if let total = status.totalBytes, total > 0, let downloaded = status.downloadedBytes {
+                let percent = Int((Double(downloaded) / Double(total) * 100).rounded())
+                return "Syncing \(min(percent, 100))%"
+            }
+            return "Syncing"
+        }
+        if status.state == "error" {
+            return "Error: \(status.lastError ?? "unknown error")"
+        }
+        return "\(status.state.capitalized), \(status.advisoryCount) rules"
     }
 }

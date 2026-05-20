@@ -34,13 +34,15 @@ type Event struct {
 }
 
 type EventRequest struct {
-	Method     string `json:"method"`
-	Path       string `json:"path"`
-	Type       string `json:"type"`
-	Package    string `json:"package,omitempty"`
-	Version    string `json:"version,omitempty"`
-	StatusCode int    `json:"status_code"`
-	DurationMS int64  `json:"duration_ms"`
+	Method      string `json:"method"`
+	Path        string `json:"path"`
+	Type        string `json:"type"`
+	Package     string `json:"package,omitempty"`
+	Version     string `json:"version,omitempty"`
+	StatusCode  int    `json:"status_code"`
+	DurationMS  int64  `json:"duration_ms"`
+	BlockedBy   string `json:"blocked_by,omitempty"`
+	BlockReason string `json:"block_reason,omitempty"`
 }
 
 type EventUpstream struct {
@@ -87,11 +89,20 @@ func classifyRequest(rawPath string) RequestInfo {
 		if strings.Contains(decoded, "/") {
 			parts := strings.Split(decoded, "/")
 			if len(parts) >= 2 {
-				return RequestInfo{Type: "metadata", Package: parts[0] + "/" + parts[1]}
+				info := RequestInfo{Type: "metadata", Package: parts[0] + "/" + parts[1]}
+				if len(parts) >= 3 && parts[2] != "" {
+					info.Version = parts[2]
+				}
+				return info
 			}
 		}
 	}
-	return RequestInfo{Type: "metadata", Package: strings.Split(decoded, "/")[0]}
+	parts = strings.Split(decoded, "/")
+	info := RequestInfo{Type: "metadata", Package: parts[0]}
+	if len(parts) >= 2 && parts[1] != "" {
+		info.Version = parts[1]
+	}
+	return info
 }
 
 func tarballVersion(filename string) string {

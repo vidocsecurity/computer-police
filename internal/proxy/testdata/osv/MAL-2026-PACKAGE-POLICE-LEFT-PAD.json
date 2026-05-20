@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.6.0",
+  "id": "MAL-2026-PACKAGE-POLICE-LEFT-PAD",
+  "modified": "2026-05-20T00:00:00Z",
+  "published": "2026-05-20T00:00:00Z",
+  "summary": "Package Police test-only malware advisory for left-pad.",
+  "details": "This advisory is intentionally fake and is used only by Package Police tests.",
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "left-pad",
+        "purl": "pkg:npm/left-pad"
+      },
+      "versions": [
+        "1.3.0",
+        "1.3.1"
+      ]
+    }
+  ]
+}

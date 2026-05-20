@@ -51,11 +51,16 @@ final class ProtectionController: ObservableObject {
         }
         do {
             try await ensureProxyRunning()
+            try await waitForAdvisorySync()
             try await runCLI(["proxy", "enable"])
             store.registryStatus = registryProbe.status()
             if store.registryStatus == .enabled {
                 store.proxyStatus = .running
-                store.setProtectionState(.on)
+                if let status = store.advisoryStatus, status.state == "error" {
+                    degrade("Registry traffic is protected, but malware advisory sync failed: \(status.lastError ?? "unknown error")")
+                } else {
+                    store.setProtectionState(.on)
+                }
             } else {
                 degrade("Proxy is running, but npm/bun registry settings do not point at Package Police.")
             }
@@ -184,6 +189,21 @@ final class ProtectionController: ObservableObject {
             }
         }
         throw lastError ?? NSError(domain: "PackagePolice", code: 1, userInfo: [NSLocalizedDescriptionKey: "Proxy did not become healthy."])
+    }
+
+    private func waitForAdvisorySync() async throws {
+        let deadline = Date().addingTimeInterval(30)
+        while Date() < deadline {
+            let advisories = try await client.advisories()
+            store.advisoryStatus = advisories.malware
+            switch advisories.malware.state {
+            case "syncing":
+                store.setProtectionState(.starting)
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            default:
+                return
+            }
+        }
     }
 
     private func spawnProxy() throws {

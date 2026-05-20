@@ -50,6 +50,36 @@ public struct APIStats: Codable, Equatable, Sendable {
         lastUpdatedAt: nil)
 }
 
+public struct APIAdvisories: Codable, Equatable, Sendable {
+    public let malware: MalwareAdvisoryStatus
+}
+
+public struct MalwareAdvisoryStatus: Codable, Equatable, Sendable {
+    public let state: String
+    public let advisoryCount: Int
+    public let cachePath: String
+    public let sourceURL: String
+    public let lastStartedAt: String?
+    public let lastSyncedAt: String?
+    public let nextRefreshAt: String?
+    public let lastError: String?
+    public let downloadedBytes: Int64?
+    public let totalBytes: Int64?
+
+    enum CodingKeys: String, CodingKey {
+        case state
+        case advisoryCount = "advisory_count"
+        case cachePath = "cache_path"
+        case sourceURL = "source_url"
+        case lastStartedAt = "last_started_at"
+        case lastSyncedAt = "last_synced_at"
+        case nextRefreshAt = "next_refresh_at"
+        case lastError = "last_error"
+        case downloadedBytes = "downloaded_bytes"
+        case totalBytes = "total_bytes"
+    }
+}
+
 public struct TopPackage: Codable, Equatable, Identifiable, Sendable {
     public var id: String { package + "@" + (version ?? "") }
     public let package: String
