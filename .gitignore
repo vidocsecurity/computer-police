@@ -11,10 +11,10 @@ DerivedData
 
 # Bundles / artifacts
 # Main app bundle (any variation)
-CodexBar.app/
-CodexBar *.app/
-CodexBar_*.app/
-Codexbar.app/
+PackagePolice.app/
+PackagePolice *.app/
+PackagePolice*.app/
+PackagePolice.app/
 # Release artifacts
 *.ipa
 *.dSYM*

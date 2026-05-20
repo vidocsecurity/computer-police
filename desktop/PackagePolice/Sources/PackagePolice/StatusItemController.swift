@@ -49,21 +49,44 @@ final class StatusItemController: NSObject {
 
     private func configureButton() {
         guard let button = statusItem.button else { return }
-        if let image = NSImage(systemSymbolName: "shield.fill", accessibilityDescription: "Package Police") {
-            let configuration = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-            let configuredImage = image.withSymbolConfiguration(configuration) ?? image
-            configuredImage.isTemplate = true
-            button.image = configuredImage
-            button.imagePosition = .imageOnly
-            button.title = ""
-        } else {
-            statusItem.length = NSStatusItem.variableLength
-            button.title = "PP"
-        }
+        button.image = Self.makeMenuBarShieldImage()
+        button.imagePosition = .imageOnly
+        button.title = ""
         button.action = #selector(togglePopover)
         button.target = self
         button.toolTip = "Package Police"
         statusItem.isVisible = true
+    }
+
+    private static func makeMenuBarShieldImage() -> NSImage {
+        let image = NSImage(size: NSSize(width: 21, height: 21), flipped: false) { rect in
+            let path = NSBezierPath()
+            path.move(to: NSPoint(x: rect.midX, y: rect.maxY - 1.5))
+            path.curve(
+                to: NSPoint(x: rect.maxX - 2.5, y: rect.maxY - 5.5),
+                controlPoint1: NSPoint(x: rect.midX + 3.2, y: rect.maxY - 2.0),
+                controlPoint2: NSPoint(x: rect.maxX - 4.2, y: rect.maxY - 3.3))
+            path.line(to: NSPoint(x: rect.maxX - 3.5, y: rect.midY - 1.0))
+            path.curve(
+                to: NSPoint(x: rect.midX, y: rect.minY + 1.5),
+                controlPoint1: NSPoint(x: rect.maxX - 4.0, y: rect.minY + 5.5),
+                controlPoint2: NSPoint(x: rect.midX + 1.5, y: rect.minY + 2.5))
+            path.curve(
+                to: NSPoint(x: rect.minX + 3.5, y: rect.midY - 1.0),
+                controlPoint1: NSPoint(x: rect.midX - 1.5, y: rect.minY + 2.5),
+                controlPoint2: NSPoint(x: rect.minX + 4.0, y: rect.minY + 5.5))
+            path.line(to: NSPoint(x: rect.minX + 2.5, y: rect.maxY - 5.5))
+            path.curve(
+                to: NSPoint(x: rect.midX, y: rect.maxY - 1.5),
+                controlPoint1: NSPoint(x: rect.minX + 4.2, y: rect.maxY - 3.3),
+                controlPoint2: NSPoint(x: rect.midX - 3.2, y: rect.maxY - 2.0))
+            path.close()
+            NSColor.white.setFill()
+            path.fill()
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 
     private func bindStore() {
@@ -89,11 +112,8 @@ final class StatusItemController: NSObject {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        button.contentTintColor = .labelColor
-        button.image?.isTemplate = true
         if button.image == nil {
-            statusItem.length = NSStatusItem.variableLength
-            button.title = "PP"
+            button.image = Self.makeMenuBarShieldImage()
         }
         button.toolTip = "Package Police: \(store.protectionState.title)"
         statusItem.isVisible = true
