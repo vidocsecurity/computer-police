@@ -51,8 +51,9 @@ final class StatusItemController: NSObject {
         guard let button = statusItem.button else { return }
         if let image = NSImage(systemSymbolName: "shield.fill", accessibilityDescription: "Package Police") {
             let configuration = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-            image.isTemplate = true
-            button.image = image.withSymbolConfiguration(configuration) ?? image
+            let configuredImage = image.withSymbolConfiguration(configuration) ?? image
+            configuredImage.isTemplate = true
+            button.image = configuredImage
             button.imagePosition = .imageOnly
             button.title = ""
         } else {
