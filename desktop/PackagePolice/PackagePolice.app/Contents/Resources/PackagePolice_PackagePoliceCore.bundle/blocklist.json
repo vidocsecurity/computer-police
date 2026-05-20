@@ -1,0 +1,60 @@
+{
+  "entries": [
+    {
+      "name": "ua-parser-js",
+      "versions": ["0.7.29", "0.8.0", "1.0.0"],
+      "advisory_id": "GHSA-pjwm-rvh2-c87w",
+      "severity": "critical",
+      "summary": "Compromised ua-parser-js releases executed malicious install scripts.",
+      "recommendation": "Upgrade to a safe ua-parser-js release and rotate credentials that may have been exposed."
+    },
+    {
+      "name": "@ctrl/tinycolor",
+      "versions": ["4.1.1", "4.1.2"],
+      "advisory_id": "MAL-2026-3841",
+      "severity": "critical",
+      "summary": "Known malicious package release associated with npm supply-chain compromise indicators.",
+      "recommendation": "Remove this version, reinstall from a trusted lockfile, and inspect postinstall activity."
+    },
+    {
+      "name": "coa",
+      "versions": ["2.0.3", "2.0.4", "2.1.1", "2.1.3", "3.0.1"],
+      "advisory_id": "GHSA-73qr-pfmq-6rp4",
+      "severity": "critical",
+      "summary": "Compromised coa releases attempted credential theft via install-time malware.",
+      "recommendation": "Upgrade to a safe version and audit machines that installed the affected releases."
+    },
+    {
+      "name": "rc",
+      "versions": ["1.2.9", "1.3.9", "2.3.9"],
+      "advisory_id": "GHSA-g2q5-5433-rhrf",
+      "severity": "critical",
+      "summary": "Compromised rc releases contained malicious install behavior.",
+      "recommendation": "Pin to a known-good release and rebuild from a clean dependency cache."
+    },
+    {
+      "name": "eslint-scope",
+      "versions": ["3.7.2"],
+      "advisory_id": "GHSA-fq7q-6g8c-2h6m",
+      "severity": "high",
+      "summary": "Historical compromised npm release with malicious credential-harvesting behavior.",
+      "recommendation": "Upgrade immediately and review npm tokens used on the affected host."
+    },
+    {
+      "name": "event-stream",
+      "versions": ["3.3.6"],
+      "advisory_id": "GHSA-c9rp-m2c5-mw98",
+      "severity": "critical",
+      "summary": "Compromised event-stream dependency chain introduced targeted malware.",
+      "recommendation": "Remove the affected dependency tree and inspect built artifacts."
+    },
+    {
+      "name": "flatmap-stream",
+      "versions": ["0.1.1"],
+      "advisory_id": "GHSA-3x92-hh7c-v4r9",
+      "severity": "critical",
+      "summary": "Malicious package used in the event-stream compromise.",
+      "recommendation": "Remove this package and rebuild from a trusted lockfile."
+    }
+  ]
+}
