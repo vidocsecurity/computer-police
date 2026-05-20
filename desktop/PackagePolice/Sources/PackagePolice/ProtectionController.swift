@@ -148,9 +148,10 @@ final class ProtectionController: ObservableObject {
     func applicationWillTerminate() {
         stopMonitoring()
         guard !store.keepProxyRunningOnQuit else { return }
-        if binary != nil {
-            Task { await disableProtection() }
-        }
+        _ = resolveBinary()
+        _ = runCLISync(["proxy", "disable"])
+        _ = runCLISync(["proxy", "stop"])
+        stopOwnedProcess()
     }
 
     @discardableResult
@@ -230,6 +231,22 @@ final class ProtectionController: ObservableObject {
             } catch {
                 continuation.resume(throwing: error)
             }
+        }
+    }
+
+    private func runCLISync(_ arguments: [String]) -> Bool {
+        guard let binary else { return false }
+        let process = Process()
+        process.executableURL = binary.url
+        process.arguments = arguments
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
+        do {
+            try process.run()
+            process.waitUntilExit()
+            return process.terminationStatus == 0
+        } catch {
+            return false
         }
     }
 
