@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 )
 
@@ -86,38 +87,94 @@ type packageManagerConfig struct {
 func detectedSupportedManagers(global bool, projectDir string) ([]packageManagerConfig, error) {
 	var managers []packageManagerConfig
 	if executableExists("npm") {
-		path := filepath.Join(projectDir, ".npmrc")
+		paths := []string{filepath.Join(projectDir, ".npmrc")}
 		if global {
 			var err error
-			path, err = userNPMRCPath()
+			path, err := userNPMRCPath()
 			if err != nil {
 				return nil, err
 			}
+			paths = []string{path}
+		} else {
+			paths = append(paths, nestedConfigPaths(projectDir, ".npmrc")...)
 		}
-		managers = append(managers, packageManagerConfig{
-			Name:    "npm",
-			Path:    path,
-			Enable:  func(registry string) error { return setNPMRC(path, registry) },
-			Disable: func() error { return restoreFile(path) },
-		})
+		for _, path := range uniquePaths(paths) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "npm",
+				Path:    path,
+				Enable:  func(registry string) error { return setNPMRC(path, registry) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
 	}
 	if bunAvailable() {
-		path := filepath.Join(projectDir, "bunfig.toml")
+		paths := []string{filepath.Join(projectDir, "bunfig.toml")}
 		if global {
 			var err error
-			path, err = userBunfigPath()
+			path, err := userBunfigPath()
 			if err != nil {
 				return nil, err
 			}
+			paths = []string{path}
+		} else {
+			paths = append(paths, nestedConfigPaths(projectDir, "bunfig.toml")...)
 		}
-		managers = append(managers, packageManagerConfig{
-			Name:    "bun",
-			Path:    path,
-			Enable:  func(registry string) error { return setBunfig(path, strings.TrimRight(registry, "/")) },
-			Disable: func() error { return restoreFile(path) },
-		})
+		for _, path := range uniquePaths(paths) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "bun",
+				Path:    path,
+				Enable:  func(registry string) error { return setBunfig(path, strings.TrimRight(registry, "/")) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
 	}
 	return managers, nil
+}
+
+func nestedConfigPaths(root, name string) []string {
+	var paths []string
+	_ = filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if entry.IsDir() {
+			if path != root && skipConfigWalkDir(entry.Name()) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if entry.Name() == name && filepath.Dir(path) != root {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	sort.Strings(paths)
+	return paths
+}
+
+func skipConfigWalkDir(name string) bool {
+	switch name {
+	case ".git", ".hg", ".svn", ".build", ".next", ".turbo", "node_modules", "vendor":
+		return true
+	default:
+		return false
+	}
+}
+
+func uniquePaths(paths []string) []string {
+	seen := map[string]struct{}{}
+	var unique []string
+	for _, path := range paths {
+		cleaned := filepath.Clean(path)
+		if _, ok := seen[cleaned]; ok {
+			continue
+		}
+		seen[cleaned] = struct{}{}
+		unique = append(unique, cleaned)
+	}
+	return unique
 }
 
 func executableExists(name string) bool {
