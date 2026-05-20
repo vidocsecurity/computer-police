@@ -23,6 +23,8 @@ struct PreferencesView: View {
 
             Section("Refresh") {
                 Picker("Stats refresh cadence", selection: $store.refreshInterval) {
+                    Text("2 seconds").tag(TimeInterval(2))
+                    Text("5 seconds").tag(TimeInterval(5))
                     Text("15 seconds").tag(TimeInterval(15))
                     Text("30 seconds").tag(TimeInterval(30))
                     Text("1 minute").tag(TimeInterval(60))
@@ -50,7 +52,7 @@ struct PreferencesView: View {
 
             Section("About") {
                 Text("Package Police monitors local package installs through a loopback registry proxy.")
-                Text("Vulnerable/prevented counts are currently driven by the bundled mock blocklist.")
+                Text("Vulnerable/prevented counts are currently driven by the bundled prototype blocklist.")
                     .foregroundStyle(.secondary)
             }
         }

@@ -122,6 +122,7 @@ func apiEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	if etag, ok := ledgerETag(paths.RegistryProxyEventsPath()); ok {
 		w.Header().Set("ETag", etag)
 		if r.Header.Get("If-None-Match") == etag {
@@ -148,6 +149,7 @@ func apiStats(w http.ResponseWriter, r *http.Request) {
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }

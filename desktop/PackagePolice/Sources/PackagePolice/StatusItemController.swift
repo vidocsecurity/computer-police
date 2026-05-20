@@ -9,14 +9,16 @@ final class StatusItemController: NSObject {
     private let popover = NSPopover()
     private let store: SecurityStore
     private let protection: ProtectionController
+    private let refresh: () -> Void
     private var cancellables = Set<AnyCancellable>()
     private var lastKnownScreenCount: Int
     private var pendingScreenChangePreviousCount: Int?
     private var screenChangeVisibilityTask: Task<Void, Never>?
 
-    init(store: SecurityStore, protection: ProtectionController) {
+    init(store: SecurityStore, protection: ProtectionController, refresh: @escaping () -> Void) {
         self.store = store
         self.protection = protection
+        self.refresh = refresh
         self.statusBar = .system
         self.statusItem = Self.makeStatusItem(statusBar: statusBar)
         self.lastKnownScreenCount = NSScreen.screens.count
@@ -105,6 +107,7 @@ final class StatusItemController: NSObject {
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            refresh()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
         }

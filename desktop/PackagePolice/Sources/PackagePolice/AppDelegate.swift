@@ -33,7 +33,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard didFinishLaunching, statusController == nil else { return }
         guard let store, let protection, let refreshLoop, let notifier else { return }
         notifier.requestAuthorization()
-        statusController = StatusItemController(store: store, protection: protection)
+        statusController = StatusItemController(store: store, protection: protection) { [weak refreshLoop] in
+            refreshLoop?.refresh()
+        }
         protection.startMonitoring()
         refreshLoop.start()
         protection.autoEnableIfNeeded()

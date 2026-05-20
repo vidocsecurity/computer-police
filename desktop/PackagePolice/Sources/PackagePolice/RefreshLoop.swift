@@ -9,6 +9,7 @@ final class RefreshLoop {
     private let notifier: Notifier
     private var timer: Timer?
     private var etag: String?
+    private var isRefreshing = false
 
     init(store: SecurityStore, client: APIClient, blocklist: Blocklist, notifier: Notifier) {
         self.store = store
@@ -35,7 +36,14 @@ final class RefreshLoop {
     }
 
     func refresh() {
+        guard !isRefreshing else { return }
+        isRefreshing = true
         Task {
+            defer {
+                Task { @MainActor in
+                    self.isRefreshing = false
+                }
+            }
             do {
                 let statsResult = try await client.stats(ifNoneMatch: etag)
                 if let next = statsResult.etag {
@@ -46,8 +54,8 @@ final class RefreshLoop {
                     if let stats = statsResult.stats {
                         store.stats = stats
                     }
-                    store.events = events
-                    store.digest = WeeklyDigest.build(stats: store.stats, events: events, blocklist: blocklist)
+                    store.events = Self.mergedEvents(existing: store.events, fresh: events)
+                    store.digest = WeeklyDigest.build(stats: store.stats, events: store.events, blocklist: blocklist)
                     notifier.notifyNewVulnerableEvents(store.digest.vulnerableEvents, enabled: store.notificationsEnabled)
                 }
             } catch {
@@ -56,5 +64,16 @@ final class RefreshLoop {
                 }
             }
         }
+    }
+
+    private static func mergedEvents(existing: [PackageEvent], fresh: [PackageEvent]) -> [PackageEvent] {
+        var byID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
+        for event in fresh {
+            byID[event.id] = event
+        }
+        return byID.values
+            .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+            .prefix(200)
+            .map { $0 }
     }
 }

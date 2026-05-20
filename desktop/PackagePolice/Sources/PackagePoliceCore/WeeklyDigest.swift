@@ -19,6 +19,7 @@ public struct WeeklyDigest: Equatable, Sendable {
         -> WeeklyDigest
     {
         let digestEvents = events
+            .filter { $0.request.type != "other" && $0.request.package != nil }
             .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
             .map { event -> DigestEvent in
                 let match = blocklist.match(event: event)

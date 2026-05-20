@@ -44,6 +44,7 @@ public final class APIClient: @unchecked Sendable {
         var components = URLComponents(url: url(path: "/api/stats"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "window", value: window)]
         var request = URLRequest(url: components.url!)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         if let ifNoneMatch {
             request.setValue(ifNoneMatch, forHTTPHeaderField: "If-None-Match")
         }
@@ -69,7 +70,9 @@ public final class APIClient: @unchecked Sendable {
     }
 
     private func get<T: Decodable>(_ type: T.Type, url: URL) async throws -> T {
-        let (data, response) = try await session.data(from: url)
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw APIError.badStatus(-1)
         }
