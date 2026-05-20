@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"package-police/internal/paths"
@@ -59,6 +60,55 @@ type EventClient struct {
 type EventPrivacy struct {
 	AuthHeadersLogged bool `json:"auth_headers_logged"`
 	BodyLogged        bool `json:"body_logged"`
+}
+
+var eventStream = newEventBroadcaster()
+
+type eventBroadcaster struct {
+	mu          sync.Mutex
+	subscribers map[chan Event]struct{}
+}
+
+func newEventBroadcaster() *eventBroadcaster {
+	return &eventBroadcaster{subscribers: map[chan Event]struct{}{}}
+}
+
+func subscribeEvents() chan Event {
+	return eventStream.subscribe()
+}
+
+func unsubscribeEvents(events chan Event) {
+	eventStream.unsubscribe(events)
+}
+
+func broadcastEvent(event Event) {
+	eventStream.broadcast(event)
+}
+
+func (b *eventBroadcaster) subscribe() chan Event {
+	ch := make(chan Event, 16)
+	b.mu.Lock()
+	b.subscribers[ch] = struct{}{}
+	b.mu.Unlock()
+	return ch
+}
+
+func (b *eventBroadcaster) unsubscribe(ch chan Event) {
+	b.mu.Lock()
+	delete(b.subscribers, ch)
+	close(ch)
+	b.mu.Unlock()
+}
+
+func (b *eventBroadcaster) broadcast(event Event) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for ch := range b.subscribers {
+		select {
+		case ch <- event:
+		default:
+		}
+	}
 }
 
 type RequestInfo struct {
@@ -174,8 +224,11 @@ func appendEvent(event Event) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.Write(append(data, '\n'))
-	return err
+	if _, err = f.Write(append(data, '\n')); err != nil {
+		return err
+	}
+	broadcastEvent(event)
+	return nil
 }
 
 type ListOptions struct {

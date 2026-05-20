@@ -8,6 +8,7 @@ struct PackagePoliceApp: App {
     @StateObject private var store: SecurityStore
     @StateObject private var protection: ProtectionController
     private let refreshLoop: RefreshLoop
+    private let eventStreamLoop: EventStreamLoop
 
     init() {
         let store = SecurityStore()
@@ -16,10 +17,19 @@ struct PackagePoliceApp: App {
         let notifier = Notifier()
         let protection = ProtectionController(store: store, client: client, notifier: notifier)
         let refreshLoop = RefreshLoop(store: store, client: client, blocklist: blocklist, notifier: notifier)
+        let eventStreamLoop = EventStreamLoop(store: store, client: client, blocklist: blocklist, notifier: notifier) {
+            refreshLoop.refresh()
+        }
         _store = StateObject(wrappedValue: store)
         _protection = StateObject(wrappedValue: protection)
         self.refreshLoop = refreshLoop
-        appDelegate.configure(store: store, protection: protection, refreshLoop: refreshLoop, notifier: notifier)
+        self.eventStreamLoop = eventStreamLoop
+        appDelegate.configure(
+            store: store,
+            protection: protection,
+            refreshLoop: refreshLoop,
+            eventStreamLoop: eventStreamLoop,
+            notifier: notifier)
     }
 
     var body: some Scene {

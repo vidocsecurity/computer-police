@@ -17,7 +17,9 @@ final class Notifier {
             notifiedEventIDs.insert(event.id)
             let title = event.isMalwarePrevented ? "Malware install prevented" : "Risky package detected"
             let advisory = event.blockedBy ?? event.blocklistEntry?.advisoryID ?? "the local policy"
-            let body = "\(event.coordinate) matches \(advisory)."
+            let body = event.isMalwarePrevented
+                ? "\(event.coordinate) was blocked by \(advisory)."
+                : "\(event.coordinate) matches \(advisory)."
             post(identifier: "package-\(event.id)", title: title, body: body)
         }
     }
@@ -45,6 +47,7 @@ final class Notifier {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
+        content.sound = .default
         center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
     }
 }

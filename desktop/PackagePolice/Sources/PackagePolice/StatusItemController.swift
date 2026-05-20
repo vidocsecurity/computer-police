@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import PackagePoliceCore
 import SwiftUI
 
 @MainActor
@@ -14,6 +15,10 @@ final class StatusItemController: NSObject {
     private var lastKnownScreenCount: Int
     private var pendingScreenChangePreviousCount: Int?
     private var screenChangeVisibilityTask: Task<Void, Never>?
+    private var malwareBlinkTask: Task<Void, Never>?
+    private var malwareBlinkDeadline: Date?
+    private var malwareBlinkOn = true
+    private var lastMalwarePreventionCount = 0
 
     init(store: SecurityStore, protection: ProtectionController, refresh: @escaping () -> Void) {
         self.store = store
@@ -22,6 +27,7 @@ final class StatusItemController: NSObject {
         self.statusBar = .system
         self.statusItem = Self.makeStatusItem(statusBar: statusBar)
         self.lastKnownScreenCount = NSScreen.screens.count
+        self.lastMalwarePreventionCount = store.digest.malwarePreventionCount
         super.init()
         configurePopover()
         configureButton()
@@ -83,11 +89,11 @@ final class StatusItemController: NSObject {
                 controlPoint1: NSPoint(x: rect.minX + 4.2, y: rect.maxY - 3.3),
                 controlPoint2: NSPoint(x: rect.midX - 3.2, y: rect.maxY - 2.0))
             path.close()
-            NSColor.white.setFill()
+            NSColor.black.setFill()
             path.fill()
             return true
         }
-        image.isTemplate = false
+        image.isTemplate = true
         return image
     }
 
@@ -98,7 +104,7 @@ final class StatusItemController: NSObject {
             .store(in: &cancellables)
         store.$digest
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.updateIcon() }
+            .sink { [weak self] digest in self?.handleDigestChanged(digest) }
             .store(in: &cancellables)
     }
 
@@ -107,6 +113,7 @@ final class StatusItemController: NSObject {
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            stopMalwareBlink()
             refresh()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
@@ -118,8 +125,51 @@ final class StatusItemController: NSObject {
         if button.image == nil {
             button.image = Self.makeMenuBarShieldImage()
         }
+        button.contentTintColor = displayedIconColor
         button.toolTip = "Package Police: \(store.protectionState.title)"
         statusItem.isVisible = true
+    }
+
+    private func handleDigestChanged(_ digest: WeeklyDigest) {
+        if digest.malwarePreventionCount > lastMalwarePreventionCount {
+            startMalwareBlink()
+        }
+        lastMalwarePreventionCount = digest.malwarePreventionCount
+        updateIcon()
+    }
+
+    private func startMalwareBlink() {
+        malwareBlinkDeadline = Date().addingTimeInterval(15)
+        malwareBlinkOn = true
+        updateIcon()
+        guard malwareBlinkTask == nil else { return }
+        malwareBlinkTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .milliseconds(450))
+                } catch {
+                    return
+                }
+                self?.tickMalwareBlink()
+            }
+        }
+    }
+
+    private func tickMalwareBlink() {
+        guard let deadline = malwareBlinkDeadline, Date() < deadline else {
+            stopMalwareBlink()
+            return
+        }
+        malwareBlinkOn.toggle()
+        updateIcon()
+    }
+
+    private func stopMalwareBlink() {
+        malwareBlinkTask?.cancel()
+        malwareBlinkTask = nil
+        malwareBlinkDeadline = nil
+        malwareBlinkOn = true
+        updateIcon()
     }
 
     private func recreateStatusItemForVisibilityRecovery(reason: String) {
@@ -200,7 +250,13 @@ final class StatusItemController: NSObject {
         }
     }
 
+    private var displayedIconColor: NSColor {
+        guard malwareBlinkTask != nil else { return iconColor }
+        return malwareBlinkOn ? .systemRed : .labelColor
+    }
+
     deinit {
+        malwareBlinkTask?.cancel()
         screenChangeVisibilityTask?.cancel()
         NotificationCenter.default.removeObserver(self)
     }

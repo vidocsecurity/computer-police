@@ -44,6 +44,50 @@ public final class APIClient: @unchecked Sendable {
         return response.events
     }
 
+    public func eventStream() -> AsyncThrowingStream<PackageEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    var request = URLRequest(url: url(path: "/api/events/stream"))
+                    request.cachePolicy = .reloadIgnoringLocalCacheData
+                    let (bytes, response) = try await session.bytes(for: request)
+                    guard let http = response as? HTTPURLResponse else {
+                        throw APIError.badStatus(-1)
+                    }
+                    guard (200..<300).contains(http.statusCode) else {
+                        throw APIError.badStatus(http.statusCode)
+                    }
+                    var eventName = ""
+                    var dataLines: [String] = []
+                    let decoder = JSONDecoder()
+                    for try await line in bytes.lines {
+                        if line.isEmpty {
+                            if eventName == "package-event", !dataLines.isEmpty {
+                                let data = dataLines.joined(separator: "\n").data(using: .utf8) ?? Data()
+                                continuation.yield(try decoder.decode(PackageEvent.self, from: data))
+                            }
+                            eventName = ""
+                            dataLines = []
+                            continue
+                        }
+                        if line.hasPrefix(":") {
+                            continue
+                        }
+                        if line.hasPrefix("event:") {
+                            eventName = Self.sseValue(line.dropFirst("event:".count))
+                        } else if line.hasPrefix("data:") {
+                            dataLines.append(Self.sseValue(line.dropFirst("data:".count)))
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     public func stats(window: String = "week", ifNoneMatch: String? = nil) async throws -> StatsResult {
         var components = URLComponents(url: url(path: "/api/stats"), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "window", value: window)]
@@ -90,5 +134,13 @@ public final class APIClient: @unchecked Sendable {
         let base = baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         return URL(string: base + "/" + trimmed)!
+    }
+
+    private static func sseValue(_ value: Substring) -> String {
+        var value = String(value)
+        if value.first == " " {
+            value.removeFirst()
+        }
+        return value
     }
 }

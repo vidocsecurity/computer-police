@@ -63,6 +63,28 @@ func TestReadEventsHonorsSinceAndLimit(t *testing.T) {
 	}
 }
 
+func TestAppendEventBroadcastsToSubscribers(t *testing.T) {
+	t.Setenv("PACKAGE_POLICE_HOME", t.TempDir())
+	events := subscribeEvents()
+	defer unsubscribeEvents(events)
+
+	event := fixtureEvent("blocked-1", time.Now().UTC(), "metadata", "left-pad", "1.3.0", http.StatusForbidden, "npm")
+	event.Request.BlockedBy = "MAL-2026-PACKAGE-POLICE-LEFT-PAD"
+	event.Request.BlockReason = "blocked for test"
+	if err := appendEvent(event); err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case got := <-events:
+		if got.EventID != event.EventID || got.Request.BlockedBy != event.Request.BlockedBy {
+			t.Fatalf("broadcast event = %#v, want %#v", got, event)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for broadcast event")
+	}
+}
+
 func fixtureEvent(id string, ts time.Time, requestType, pkg, version string, status int, manager string) Event {
 	return Event{
 		SchemaVersion: "1.0",

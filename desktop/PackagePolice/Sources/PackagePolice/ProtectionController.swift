@@ -222,6 +222,7 @@ final class ProtectionController: ObservableObject {
         let process = Process()
         process.executableURL = binary.url
         process.arguments = ["proxy", "serve"]
+        process.environment = proxyEnvironment()
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
@@ -237,6 +238,7 @@ final class ProtectionController: ObservableObject {
             let process = Process()
             process.executableURL = binary.url
             process.arguments = arguments
+            process.environment = proxyEnvironment()
             let output = Pipe()
             process.standardOutput = output
             process.standardError = output
@@ -265,6 +267,7 @@ final class ProtectionController: ObservableObject {
         let process = Process()
         process.executableURL = binary.url
         process.arguments = arguments
+        process.environment = proxyEnvironment()
         process.standardOutput = Pipe()
         process.standardError = Pipe()
         do {
@@ -337,5 +340,16 @@ final class ProtectionController: ObservableObject {
         store.lastError = reason
         store.setProtectionState(.failed(reason))
         notifier.notifyProtectionIssue(store.protectionState, enabled: store.notificationsEnabled)
+    }
+
+    private func proxyEnvironment() -> [String: String] {
+        var environment = ProcessInfo.processInfo.environment
+        if environment["PACKAGE_POLICE_OSV_ADVISORY_DIR"] == nil,
+           let advisoryDir = Bundle.main.resourceURL?.appendingPathComponent("osv-testdata", isDirectory: true),
+           FileManager.default.fileExists(atPath: advisoryDir.path)
+        {
+            environment["PACKAGE_POLICE_OSV_ADVISORY_DIR"] = advisoryDir.path
+        }
+        return environment
     }
 }

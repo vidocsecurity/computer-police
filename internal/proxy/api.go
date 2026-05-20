@@ -56,6 +56,7 @@ type apiTopPackage struct {
 func mountAPIHandlers(mux *http.ServeMux, advisoryStore *MalwareAdvisoryStore) {
 	mux.HandleFunc("/api/health", apiLoopbackOnly(apiMethod(http.MethodGet, apiHealth)))
 	mux.HandleFunc("/api/events", apiLoopbackOnly(apiMethod(http.MethodGet, apiEvents)))
+	mux.HandleFunc("/api/events/stream", apiLoopbackOnly(apiMethod(http.MethodGet, apiEventStream)))
 	mux.HandleFunc("/api/stats", apiLoopbackOnly(apiMethod(http.MethodGet, apiStats)))
 	if advisoryStore != nil {
 		mux.HandleFunc("/api/advisories", apiLoopbackOnly(apiMethod(http.MethodGet, apiAdvisories(advisoryStore))))
@@ -126,6 +127,42 @@ func apiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, apiEventsResponse{Events: events})
+}
+
+func apiEventStream(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+	events := subscribeEvents()
+	defer unsubscribeEvents(events)
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Connection", "keep-alive")
+	_, _ = fmt.Fprint(w, ": connected\n\n")
+	flusher.Flush()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case event := <-events:
+			data, err := json.Marshal(event)
+			if err != nil {
+				continue
+			}
+			_, _ = fmt.Fprintf(w, "event: package-event\nid: %s\ndata: %s\n\n", sseID(event.EventID), data)
+			flusher.Flush()
+		}
+	}
+}
+
+func sseID(id string) string {
+	id = strings.ReplaceAll(id, "\n", "")
+	id = strings.ReplaceAll(id, "\r", "")
+	return id
 }
 
 func apiStats(w http.ResponseWriter, r *http.Request) {

@@ -70,7 +70,7 @@ final class RefreshLoop {
         }
     }
 
-    private static func mergedEvents(existing: [PackageEvent], fresh: [PackageEvent]) -> [PackageEvent] {
+    static func mergedEvents(existing: [PackageEvent], fresh: [PackageEvent]) -> [PackageEvent] {
         var byID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
         for event in fresh {
             byID[event.id] = event
