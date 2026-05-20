@@ -11,12 +11,13 @@ final class Notifier {
         center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
-    func notifyNewVulnerableEvents(_ events: [DigestEvent], enabled: Bool) {
+    func notifyNewSecurityEvents(_ events: [DigestEvent], enabled: Bool) {
         guard enabled else { return }
         for event in events where !notifiedEventIDs.contains(event.id) {
             notifiedEventIDs.insert(event.id)
-            let title = "Vulnerable package detected"
-            let body = "\(event.coordinate) matches \(event.blocklistEntry?.advisoryID ?? "the mock blocklist")."
+            let title = event.isMalwarePrevented ? "Malware install prevented" : "Risky package detected"
+            let advisory = event.blockedBy ?? event.blocklistEntry?.advisoryID ?? "the local policy"
+            let body = "\(event.coordinate) matches \(advisory)."
             post(identifier: "package-\(event.id)", title: title, body: body)
         }
     }

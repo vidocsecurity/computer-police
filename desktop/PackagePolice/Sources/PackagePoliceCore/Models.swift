@@ -121,6 +121,8 @@ public struct EventRequest: Codable, Equatable, Sendable {
     public let version: String?
     public let statusCode: Int
     public let durationMS: Int
+    public let blockedBy: String?
+    public let blockReason: String?
 
     enum CodingKeys: String, CodingKey {
         case method
@@ -130,6 +132,8 @@ public struct EventRequest: Codable, Equatable, Sendable {
         case version
         case statusCode = "status_code"
         case durationMS = "duration_ms"
+        case blockedBy = "blocked_by"
+        case blockReason = "block_reason"
     }
 }
 

@@ -52,7 +52,7 @@ struct PreferencesView: View {
 
             Section("About") {
                 Text("Package Police monitors local package installs through a loopback registry proxy.")
-                Text("Vulnerable/prevented counts are currently driven by the bundled prototype blocklist.")
+                Text("Malware prevention counts come from proxy-blocked OSV MAL advisories.")
                     .foregroundStyle(.secondary)
             }
         }

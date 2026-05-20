@@ -13,9 +13,8 @@ struct DashboardView: View {
 
             HStack(spacing: 10) {
                 StatCardView(title: "Installs this week", value: "\(store.digest.installsThisWeek)", color: .blue)
-                StatCardView(title: "Vulnerable detected", value: "\(store.digest.vulnerableCount)", color: store.digest.vulnerableCount > 0 ? .orange : .green)
-                StatCardView(title: "Prevented installs", value: "\(store.digest.preventedCount)", color: .purple)
-                    .help("Mock mode: these are would-have-been-prevented matches until the Go blocklist inspector is wired.")
+                StatCardView(title: "Malware prevention", value: "\(store.digest.malwarePreventionCount)", color: store.digest.malwarePreventionCount > 0 ? .red : .green)
+                StatCardView(title: "Blocked requests", value: "\(store.digest.preventedCount)", color: .purple)
             }
 
             RecommendedActionsView(store: store, protection: protection)

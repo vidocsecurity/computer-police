@@ -194,7 +194,13 @@ final class ProtectionController: ObservableObject {
     private func waitForAdvisorySync() async throws {
         let deadline = Date().addingTimeInterval(30)
         while Date() < deadline {
-            let advisories = try await client.advisories()
+            let advisories: APIAdvisories
+            do {
+                advisories = try await client.advisories()
+            } catch {
+                store.lastError = "Malware advisory status is unavailable: \(error.localizedDescription)"
+                return
+            }
             store.advisoryStatus = advisories.malware
             switch advisories.malware.state {
             case "syncing":

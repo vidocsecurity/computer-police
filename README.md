@@ -7,6 +7,7 @@ The proxy records local package install traffic in `~/.package-police/registry-p
 - `GET /api/health`
 - `GET /api/events?limit=50`
 - `GET /api/stats?window=week`
+- `GET /api/advisories`
 
 The macOS app lives in `desktop/PackagePolice`. It acts like a VPN-style control surface for package-install protection: start/stop the proxy, rewrite/repair npm and bun registry config, show status lights, surface weekly install counts, and flag packages that match the bundled mock blocklist.
 
@@ -38,4 +39,4 @@ package-police proxy stop
 
 Current registry integration supports npm and bun.
 
-Malware advisory data is cached at `~/.package-police/registry-proxy/malware-advisories.json` and refreshed from the OSV npm snapshot every 10 minutes. For local testing, set `PACKAGE_POLICE_OSV_ADVISORY_DIR` to a directory of OSV-format JSON advisories; those advisories are layered onto the cache.
+Malware advisory data is cached at `~/.package-police/registry-proxy/malware-advisories.json`, refreshed from the OSV npm snapshot every 10 minutes, and synced in the background when the proxy starts. The `/api/advisories` endpoint reports sync state and download progress for the menu bar app. For local testing, set `PACKAGE_POLICE_OSV_ADVISORY_DIR` to a directory of OSV-format JSON advisories; those advisories are layered onto the cache.

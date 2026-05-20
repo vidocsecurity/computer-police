@@ -5,11 +5,13 @@ public struct WeeklyDigest: Equatable, Sendable {
     public let stats: APIStats
     public let recentEvents: [DigestEvent]
     public let vulnerableEvents: [DigestEvent]
+    public let malwareEvents: [DigestEvent]
     public let preventedCount: Int
     public let recommendations: [DigestRecommendation]
 
     public var installsThisWeek: Int { stats.installs }
     public var vulnerableCount: Int { vulnerableEvents.count }
+    public var malwarePreventionCount: Int { malwareEvents.count }
 
     public static func build(
         stats: APIStats,
@@ -26,21 +28,34 @@ public struct WeeklyDigest: Equatable, Sendable {
                 return DigestEvent(event: event, blocklistEntry: match)
             }
 
-        let vulnerable = digestEvents.filter { $0.blocklistEntry != nil }
+        let malware = digestEvents.filter { $0.isMalwarePrevented }
+        let vulnerable = digestEvents.filter { $0.blocklistEntry != nil || $0.isMalwarePrevented }
         let recommendations = Dictionary(grouping: vulnerable) { digestEvent in
             digestEvent.packageName + "@" + (digestEvent.version ?? "")
         }
         .values
         .compactMap { events -> DigestRecommendation? in
-            guard let first = events.first, let entry = first.blocklistEntry else { return nil }
+            guard let first = events.first else { return nil }
+            if let entry = first.blocklistEntry {
+                return DigestRecommendation(
+                    id: entry.id,
+                    packageName: first.packageName,
+                    version: first.version,
+                    severity: entry.severity,
+                    advisoryID: entry.advisoryID,
+                    summary: entry.summary,
+                    recommendation: entry.recommendation,
+                    count: events.count)
+            }
+            guard let advisoryID = first.blockedBy else { return nil }
             return DigestRecommendation(
-                id: entry.id,
+                id: advisoryID,
                 packageName: first.packageName,
                 version: first.version,
-                severity: entry.severity,
-                advisoryID: entry.advisoryID,
-                summary: entry.summary,
-                recommendation: entry.recommendation,
+                severity: "critical",
+                advisoryID: advisoryID,
+                summary: first.blockReason ?? "Package Police blocked this package metadata or tarball.",
+                recommendation: "Do not install this version. Rebuild from a trusted lockfile after choosing a safe release.",
                 count: events.count)
         }
         .sorted { lhs, rhs in
@@ -55,7 +70,8 @@ public struct WeeklyDigest: Equatable, Sendable {
             stats: stats,
             recentEvents: Array(digestEvents.prefix(10)),
             vulnerableEvents: vulnerable,
-            preventedCount: vulnerable.count,
+            malwareEvents: malware,
+            preventedCount: stats.blocked,
             recommendations: recommendations)
     }
 }
@@ -71,8 +87,11 @@ public struct DigestEvent: Equatable, Identifiable, Sendable {
     public var manager: String { event.client.packageManagerGuess ?? "unknown" }
     public var requestType: String { event.request.type }
     public var statusCode: Int { event.request.statusCode }
+    public var blockedBy: String? { event.request.blockedBy }
+    public var blockReason: String? { event.request.blockReason }
     public var isVulnerable: Bool { blocklistEntry != nil }
     public var isBlocked: Bool { statusCode == 403 }
+    public var isMalwarePrevented: Bool { isBlocked && blockedBy != nil }
 }
 
 public struct DigestRecommendation: Equatable, Identifiable, Sendable {

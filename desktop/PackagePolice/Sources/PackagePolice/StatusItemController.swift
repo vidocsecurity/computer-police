@@ -190,7 +190,7 @@ final class StatusItemController: NSObject {
     private var iconColor: NSColor {
         switch store.protectionState {
         case .on:
-            return store.digest.vulnerableCount > 0 ? .systemOrange : .systemGreen
+            return store.digest.malwarePreventionCount > 0 ? .systemRed : .systemGreen
         case .degraded, .starting, .stopping:
             return .systemYellow
         case .failed:

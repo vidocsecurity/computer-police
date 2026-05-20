@@ -60,7 +60,7 @@ final class RefreshLoop {
                     }
                     store.events = Self.mergedEvents(existing: store.events, fresh: events)
                     store.digest = WeeklyDigest.build(stats: store.stats, events: store.events, blocklist: blocklist)
-                    notifier.notifyNewVulnerableEvents(store.digest.vulnerableEvents, enabled: store.notificationsEnabled)
+                    notifier.notifyNewSecurityEvents(store.digest.vulnerableEvents, enabled: store.notificationsEnabled)
                 }
             } catch {
                 await MainActor.run {

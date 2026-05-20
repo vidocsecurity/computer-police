@@ -39,7 +39,7 @@ struct ProtectionToggleView: View {
 
     private var color: Color {
         switch store.protectionState {
-        case .on: return store.digest.vulnerableCount > 0 ? .orange : .green
+        case .on: return store.digest.malwarePreventionCount > 0 ? .red : .green
         case .degraded, .starting, .stopping: return .yellow
         case .failed: return .red
         case .off: return .secondary

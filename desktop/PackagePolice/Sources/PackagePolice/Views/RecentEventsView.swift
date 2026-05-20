@@ -17,22 +17,47 @@ struct RecentEventsView: View {
             } else {
                 ForEach(events) { event in
                     HStack(spacing: 8) {
-                        Image(systemName: event.isVulnerable ? "exclamationmark.triangle.fill" : "shippingbox")
-                            .foregroundStyle(event.isVulnerable ? .orange : .secondary)
+                        Image(systemName: iconName(for: event))
+                            .foregroundStyle(iconColor(for: event))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(event.coordinate)
                                 .font(.caption.bold())
                                 .lineLimit(1)
-                            Text("\(event.manager) • \(event.requestType) • HTTP \(event.statusCode)")
+                            Text(detail(for: event))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
                     }
                     .padding(8)
-                    .background(event.isVulnerable ? Color.orange.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+                    .background(backgroundColor(for: event), in: RoundedRectangle(cornerRadius: 10))
                 }
             }
         }
+    }
+
+    private func iconName(for event: DigestEvent) -> String {
+        if event.isMalwarePrevented { return "shield.fill" }
+        if event.isVulnerable { return "exclamationmark.triangle.fill" }
+        return "shippingbox"
+    }
+
+    private func iconColor(for event: DigestEvent) -> Color {
+        if event.isMalwarePrevented { return .red }
+        if event.isVulnerable { return .orange }
+        return .secondary
+    }
+
+    private func backgroundColor(for event: DigestEvent) -> Color {
+        if event.isMalwarePrevented { return Color.red.opacity(0.12) }
+        if event.isVulnerable { return Color.orange.opacity(0.12) }
+        return Color.clear
+    }
+
+    private func detail(for event: DigestEvent) -> String {
+        if let blockedBy = event.blockedBy {
+            return "\(event.manager) • blocked by \(blockedBy) • HTTP \(event.statusCode)"
+        }
+        return "\(event.manager) • \(event.requestType) • HTTP \(event.statusCode)"
     }
 }

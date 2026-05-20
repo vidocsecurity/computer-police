@@ -48,10 +48,19 @@ type ResponseInspector interface {
 	InspectResponse(*http.Request, RequestInfo, *http.Response, []byte) Decision
 }
 
+type ResponseRewriter interface {
+	RewriteResponse(*http.Request, RequestInfo, *http.Response, []byte) ResponseRewrite
+}
+
 type Decision struct {
 	Allowed   bool
 	Reason    string
 	BlockedBy string
+}
+
+type ResponseRewrite struct {
+	Decision
+	Body []byte
 }
 
 type AllowAllInspector struct{}
@@ -169,6 +178,19 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "blocked by Package Police registry policy", status)
 			return
 		}
+		if rewriter, ok := p.inspector.(ResponseRewriter); ok {
+			rewrite := rewriter.RewriteResponse(r, info, resp, body)
+			if !rewrite.Allowed {
+				status = http.StatusForbidden
+				blockReason = rewrite.Reason
+				blockedBy = rewrite.BlockedBy
+				http.Error(w, "blocked by Package Police registry policy", status)
+				return
+			}
+			if rewrite.Body != nil {
+				body = rewrite.Body
+			}
+		}
 		status = resp.StatusCode
 		copyHeaders(w.Header(), resp.Header)
 		w.Header().Del("Content-Length")
@@ -235,12 +257,30 @@ func requestPath(r *http.Request) string {
 
 func copyHeaders(dst, src http.Header) {
 	for key, values := range src {
-		if isHopHeader(key) {
+		if isHopHeader(key) || isConditionalRequestHeader(key) || isProxyControlledRequestHeader(key) {
 			continue
 		}
 		for _, value := range values {
 			dst.Add(key, value)
 		}
+	}
+}
+
+func isProxyControlledRequestHeader(key string) bool {
+	switch strings.ToLower(key) {
+	case "accept-encoding":
+		return true
+	default:
+		return false
+	}
+}
+
+func isConditionalRequestHeader(key string) bool {
+	switch strings.ToLower(key) {
+	case "if-match", "if-modified-since", "if-none-match", "if-range", "if-unmodified-since":
+		return true
+	default:
+		return false
 	}
 }
 
