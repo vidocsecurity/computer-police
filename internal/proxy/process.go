@@ -43,7 +43,7 @@ func StartBackground(out io.Writer, opts ServerOptions) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"proxy", "serve", "--host", opts.Host, "--port", strconv.Itoa(opts.Port), "--upstream", opts.Upstream}
+	args := []string{"proxy", "serve", "--host", opts.Host, "--port", strconv.Itoa(opts.Port), "--upstream", opts.Upstream, "--pypi-upstream", opts.PyPIUpstream}
 	cmd := exec.Command(exe, args...)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile

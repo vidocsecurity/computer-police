@@ -37,6 +37,7 @@ type EventRequest struct {
 	Method      string `json:"method"`
 	Path        string `json:"path"`
 	Type        string `json:"type"`
+	Ecosystem   string `json:"ecosystem,omitempty"`
 	Package     string `json:"package,omitempty"`
 	Version     string `json:"version,omitempty"`
 	StatusCode  int    `json:"status_code"`
@@ -61,9 +62,10 @@ type EventPrivacy struct {
 }
 
 type RequestInfo struct {
-	Type    string
-	Package string
-	Version string
+	Type      string
+	Ecosystem string
+	Package   string
+	Version   string
 }
 
 var tarballVersionRE = regexp.MustCompile(`^(.+)-([0-9][A-Za-z0-9.+~_-]*(?:-[A-Za-z0-9.+~_-]+)?)\.tgz$`)
@@ -77,19 +79,22 @@ func classifyRequest(rawPath string) RequestInfo {
 	if err != nil {
 		decoded = cleaned
 	}
+	if info, ok := classifyPyPIRequest(decoded); ok {
+		return info
+	}
 	parts := strings.Split(decoded, "/")
 	if len(parts) >= 3 && parts[len(parts)-2] == "-" && strings.HasSuffix(parts[len(parts)-1], ".tgz") {
 		pkg := parts[0]
 		if strings.HasPrefix(pkg, "@") && len(parts) >= 4 {
 			pkg = parts[0] + "/" + parts[1]
 		}
-		return RequestInfo{Type: "tarball", Package: pkg, Version: tarballVersion(parts[len(parts)-1])}
+		return RequestInfo{Type: "tarball", Ecosystem: "npm", Package: pkg, Version: tarballVersion(parts[len(parts)-1])}
 	}
 	if strings.HasPrefix(decoded, "@") {
 		if strings.Contains(decoded, "/") {
 			parts := strings.Split(decoded, "/")
 			if len(parts) >= 2 {
-				info := RequestInfo{Type: "metadata", Package: parts[0] + "/" + parts[1]}
+				info := RequestInfo{Type: "metadata", Ecosystem: "npm", Package: parts[0] + "/" + parts[1]}
 				if len(parts) >= 3 && parts[2] != "" {
 					info.Version = parts[2]
 				}
@@ -98,11 +103,29 @@ func classifyRequest(rawPath string) RequestInfo {
 		}
 	}
 	parts = strings.Split(decoded, "/")
-	info := RequestInfo{Type: "metadata", Package: parts[0]}
+	info := RequestInfo{Type: "metadata", Ecosystem: "npm", Package: parts[0]}
 	if len(parts) >= 2 && parts[1] != "" {
 		info.Version = parts[1]
 	}
 	return info
+}
+
+func classifyPyPIRequest(decoded string) (RequestInfo, bool) {
+	parts := strings.Split(strings.Trim(decoded, "/"), "/")
+	if len(parts) >= 2 && parts[0] == "simple" && parts[1] != "" {
+		return RequestInfo{
+			Type:      "pypi_metadata",
+			Ecosystem: "PyPI",
+			Package:   normalizePyPIName(parts[1]),
+		}, true
+	}
+	if len(parts) >= 2 && parts[0] == "packages" {
+		pkg, version := pypiFilenameCoordinate(path.Base(decoded))
+		if pkg != "" && version != "" {
+			return RequestInfo{Type: "pypi_file", Ecosystem: "PyPI", Package: pkg, Version: version}, true
+		}
+	}
+	return RequestInfo{}, false
 }
 
 func tarballVersion(filename string) string {
@@ -121,6 +144,10 @@ func tarballVersion(filename string) string {
 func guessPackageManager(userAgent string) string {
 	ua := strings.ToLower(userAgent)
 	switch {
+	case strings.Contains(ua, "pip/"):
+		return "pip"
+	case strings.Contains(ua, "uv/"):
+		return "uv"
 	case strings.Contains(ua, "bun/"):
 		return "bun"
 	case strings.Contains(ua, "pnpm/"):

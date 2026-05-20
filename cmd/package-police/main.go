@@ -159,9 +159,10 @@ func stringFlag(args []string, flag string) string {
 
 func proxyOptions(args []string) proxy.ServerOptions {
 	return proxy.ServerOptions{
-		Host:     stringFlagDefault(args, "--host", proxy.DefaultHost),
-		Port:     portFlag(args, "--port", proxy.DefaultPort),
-		Upstream: stringFlagDefault(args, "--upstream", proxy.DefaultUpstream),
+		Host:         stringFlagDefault(args, "--host", proxy.DefaultHost),
+		Port:         portFlag(args, "--port", proxy.DefaultPort),
+		Upstream:     stringFlagDefault(args, "--upstream", proxy.DefaultUpstream),
+		PyPIUpstream: stringFlagDefault(args, "--pypi-upstream", proxy.DefaultPyPIUpstream),
 	}
 }
 

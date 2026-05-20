@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.6.0",
+  "id": "MAL-2026-PACKAGE-POLICE-PYPI",
+  "modified": "2026-05-20T00:00:00Z",
+  "published": "2026-05-20T00:00:00Z",
+  "summary": "Package Police test-only malware advisory for a fake PyPI package.",
+  "details": "This advisory is intentionally fake and is used only by Package Police tests.",
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "PyPI",
+        "name": "package-police-py-test",
+        "purl": "pkg:pypi/package-police-py-test"
+      },
+      "versions": [
+        "1.0.0"
+      ]
+    }
+  ]
+}

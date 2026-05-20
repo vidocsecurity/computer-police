@@ -16,15 +16,17 @@ import (
 )
 
 const (
-	DefaultHost     = "127.0.0.1"
-	DefaultPort     = 4873
-	DefaultUpstream = "https://registry.npmjs.org/"
+	DefaultHost         = "127.0.0.1"
+	DefaultPort         = 4873
+	DefaultUpstream     = "https://registry.npmjs.org/"
+	DefaultPyPIUpstream = "https://pypi.org/"
 )
 
 type ServerOptions struct {
-	Host     string
-	Port     int
-	Upstream string
+	Host         string
+	Port         int
+	Upstream     string
+	PyPIUpstream string
 }
 
 func (o ServerOptions) withDefaults() ServerOptions {
@@ -36,6 +38,9 @@ func (o ServerOptions) withDefaults() ServerOptions {
 	}
 	if o.Upstream == "" {
 		o.Upstream = DefaultUpstream
+	}
+	if o.PyPIUpstream == "" {
+		o.PyPIUpstream = DefaultPyPIUpstream
 	}
 	return o
 }
@@ -70,12 +75,17 @@ func (AllowAllInspector) Inspect(*http.Request, RequestInfo) Decision {
 }
 
 type RegistryProxy struct {
-	upstream  *url.URL
-	client    *http.Client
-	inspector Inspector
+	upstream     *url.URL
+	pypiUpstream *url.URL
+	client       *http.Client
+	inspector    Inspector
 }
 
 func NewRegistryProxy(upstream string, inspector Inspector) (*RegistryProxy, error) {
+	return NewRegistryProxyWithUpstreams(upstream, upstream, inspector)
+}
+
+func NewRegistryProxyWithUpstreams(upstream, pypiUpstream string, inspector Inspector) (*RegistryProxy, error) {
 	parsed, err := url.Parse(upstream)
 	if err != nil {
 		return nil, err
@@ -83,11 +93,19 @@ func NewRegistryProxy(upstream string, inspector Inspector) (*RegistryProxy, err
 	if parsed.Scheme == "" || parsed.Host == "" {
 		return nil, fmt.Errorf("invalid upstream registry %q", upstream)
 	}
+	parsedPyPI, err := url.Parse(pypiUpstream)
+	if err != nil {
+		return nil, err
+	}
+	if parsedPyPI.Scheme == "" || parsedPyPI.Host == "" {
+		return nil, fmt.Errorf("invalid PyPI upstream registry %q", pypiUpstream)
+	}
 	if inspector == nil {
 		inspector = AllowAllInspector{}
 	}
 	return &RegistryProxy{
-		upstream: parsed,
+		upstream:     parsed,
+		pypiUpstream: parsedPyPI,
 		client: &http.Client{
 			Timeout: 10 * time.Minute,
 			Transport: &http.Transport{
@@ -104,6 +122,7 @@ func NewRegistryProxy(upstream string, inspector Inspector) (*RegistryProxy, err
 func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	info := classifyRequest(r.URL.Path)
+	upstream := p.upstreamFor(info)
 	status := http.StatusBadGateway
 	var blockReason string
 	var blockedBy string
@@ -118,6 +137,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Method:      r.Method,
 				Path:        requestPath(r),
 				Type:        info.Type,
+				Ecosystem:   info.Ecosystem,
 				Package:     info.Package,
 				Version:     info.Version,
 				StatusCode:  status,
@@ -125,7 +145,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				BlockedBy:   blockedBy,
 				BlockReason: blockReason,
 			},
-			Upstream: EventUpstream{Registry: p.upstream.String()},
+			Upstream: EventUpstream{Registry: upstream.String()},
 			Client: EventClient{
 				UserAgent:           r.UserAgent(),
 				PackageManagerGuess: guessPackageManager(r.UserAgent()),
@@ -145,7 +165,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	upstreamURL := strings.TrimRight(p.upstream.String(), "/") + r.URL.RequestURI()
+	upstreamURL := strings.TrimRight(upstream.String(), "/") + r.URL.RequestURI()
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, upstreamURL, r.Body)
 	if err != nil {
 		status = http.StatusInternalServerError
@@ -153,7 +173,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	copyHeaders(req.Header, r.Header)
-	req.Host = p.upstream.Host
+	req.Host = upstream.Host
 
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -206,11 +226,25 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func shouldInspectResponse(info RequestInfo, resp *http.Response) bool {
-	if info.Type != "metadata" || resp.StatusCode >= 400 {
+	if resp.StatusCode >= 400 {
 		return false
 	}
 	contentType := strings.ToLower(resp.Header.Get("Content-Type"))
-	return strings.Contains(contentType, "json") || contentType == ""
+	switch info.Type {
+	case "metadata":
+		return strings.Contains(contentType, "json") || contentType == ""
+	case "pypi_metadata":
+		return strings.Contains(contentType, "html") || strings.Contains(contentType, "text") || contentType == ""
+	default:
+		return false
+	}
+}
+
+func (p *RegistryProxy) upstreamFor(info RequestInfo) *url.URL {
+	if info.Ecosystem == "PyPI" && p.pypiUpstream != nil {
+		return p.pypiUpstream
+	}
+	return p.upstream
 }
 
 func RunForeground(out io.Writer, opts ServerOptions) error {
@@ -220,7 +254,7 @@ func RunForeground(out io.Writer, opts ServerOptions) error {
 	}
 	advisoryStore := NewMalwareAdvisoryStoreFromEnv()
 	advisoryStore.StartBackgroundRefresh(context.Background())
-	handler, err := NewRegistryProxy(opts.Upstream, &MalwareInspector{store: advisoryStore})
+	handler, err := NewRegistryProxyWithUpstreams(opts.Upstream, opts.PyPIUpstream, &MalwareInspector{store: advisoryStore})
 	if err != nil {
 		return err
 	}

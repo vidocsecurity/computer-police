@@ -15,25 +15,38 @@ struct RecentEventsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 10)
             } else {
-                ForEach(events) { event in
-                    HStack(spacing: 8) {
-                        Image(systemName: iconName(for: event))
-                            .foregroundStyle(iconColor(for: event))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(event.coordinate)
-                                .font(.caption.bold())
-                                .lineLimit(1)
-                            Text(detail(for: event))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 6) {
+                        ForEach(events) { event in
+                            eventRow(event)
                         }
-                        Spacer()
                     }
-                    .padding(8)
-                    .background(backgroundColor(for: event), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.vertical, 1)
                 }
+                .frame(maxHeight: 220)
             }
         }
+    }
+
+    private func eventRow(_ event: DigestEvent) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: iconName(for: event))
+                .foregroundStyle(iconColor(for: event))
+                .frame(width: 16)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event.coordinate)
+                    .font(.caption.bold())
+                    .lineLimit(1)
+                Text(detail(for: event))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 8)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(backgroundColor(for: event), in: RoundedRectangle(cornerRadius: 8))
     }
 
     private func iconName(for event: DigestEvent) -> String {
