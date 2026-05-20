@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/vidoc/package-police/internal/paths"
+	"package-police/internal/paths"
 )
 
 type Status struct {
@@ -122,14 +122,24 @@ func Doctor(out io.Writer) error {
 		fmt.Fprintf(out, "✗ proxy ping reachable: %s\n", registry)
 	}
 	if projectConfigured(".npmrc", registry) {
-		fmt.Fprintln(out, "✓ .npmrc configured for proxy")
+		fmt.Fprintln(out, "✓ project .npmrc configured for proxy")
 	} else {
-		fmt.Fprintln(out, "✗ .npmrc configured for proxy")
+		fmt.Fprintln(out, "✗ project .npmrc configured for proxy")
+	}
+	if npmrc, err := userNPMRCPath(); err == nil && projectConfigured(npmrc, registry) {
+		fmt.Fprintln(out, "✓ global npm registry configured for proxy")
+	} else {
+		fmt.Fprintln(out, "• global npm registry configured for proxy: no")
 	}
 	if projectConfigured("bunfig.toml", strings.TrimRight(registry, "/")) {
 		fmt.Fprintln(out, "✓ bunfig.toml configured for proxy")
 	} else {
 		fmt.Fprintln(out, "• bunfig.toml configured for proxy: no")
+	}
+	if bunfig, err := userBunfigPath(); err == nil && projectConfigured(bunfig, strings.TrimRight(registry, "/")) {
+		fmt.Fprintln(out, "✓ global bun registry configured for proxy")
+	} else {
+		fmt.Fprintln(out, "• global bun registry configured for proxy: no")
 	}
 	events, err := readLastEvents(5)
 	if err == nil && len(events) > 0 {

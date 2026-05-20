@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vidoc/package-police/internal/paths"
+	"package-police/internal/paths"
 )
 
 const (

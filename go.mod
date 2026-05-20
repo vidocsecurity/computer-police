@@ -1,4 +1,3 @@
-module github.com/vidoc/package-police
+module package-police
 
 go 1.24
-

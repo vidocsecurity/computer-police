@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -11,12 +12,12 @@ import (
 type EnableOptions struct {
 	ProjectDir  string
 	RegistryURL string
-	Bun         bool
+	Global      bool
 }
 
 type DisableOptions struct {
 	ProjectDir string
-	Bun        bool
+	Global     bool
 }
 
 func EnableProject(out io.Writer, opts EnableOptions) error {
@@ -32,15 +33,19 @@ func EnableProject(out io.Writer, opts EnableOptions) error {
 	if registry == "" {
 		registry = fmt.Sprintf("http://%s:%d/", DefaultHost, DefaultPort)
 	}
-	if err := setNPMRC(filepath.Join(dir, ".npmrc"), registry); err != nil {
+
+	managers, err := detectedSupportedManagers(opts.Global, dir)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "configured .npmrc registry=%s\n", registry)
-	if opts.Bun {
-		if err := setBunfig(filepath.Join(dir, "bunfig.toml"), strings.TrimRight(registry, "/")); err != nil {
+	if len(managers) == 0 {
+		return fmt.Errorf("no supported package managers detected")
+	}
+	for _, manager := range managers {
+		if err := manager.Enable(registry); err != nil {
 			return err
 		}
-		fmt.Fprintf(out, "configured bunfig.toml install.registry=%s\n", strings.TrimRight(registry, "/"))
+		fmt.Fprintf(out, "configured %s registry=%s (%s)\n", manager.Name, registry, manager.Path)
 	}
 	return nil
 }
@@ -54,17 +59,69 @@ func DisableProject(out io.Writer, opts DisableOptions) error {
 			return err
 		}
 	}
-	if err := restoreFile(filepath.Join(dir, ".npmrc")); err != nil {
+	managers, err := detectedSupportedManagers(opts.Global, dir)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "restored .npmrc")
-	if opts.Bun {
-		if err := restoreFile(filepath.Join(dir, "bunfig.toml")); err != nil {
+	if len(managers) == 0 {
+		return fmt.Errorf("no supported package managers detected")
+	}
+	for _, manager := range managers {
+		if err := manager.Disable(); err != nil {
 			return err
 		}
-		fmt.Fprintln(out, "restored bunfig.toml")
+		fmt.Fprintf(out, "restored %s (%s)\n", manager.Name, manager.Path)
 	}
 	return nil
+}
+
+type packageManagerConfig struct {
+	Name    string
+	Path    string
+	Enable  func(string) error
+	Disable func() error
+}
+
+func detectedSupportedManagers(global bool, projectDir string) ([]packageManagerConfig, error) {
+	var managers []packageManagerConfig
+	if executableExists("npm") {
+		path := filepath.Join(projectDir, ".npmrc")
+		if global {
+			var err error
+			path, err = userNPMRCPath()
+			if err != nil {
+				return nil, err
+			}
+		}
+		managers = append(managers, packageManagerConfig{
+			Name:    "npm",
+			Path:    path,
+			Enable:  func(registry string) error { return setNPMRC(path, registry) },
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+	if executableExists("bun") {
+		path := filepath.Join(projectDir, "bunfig.toml")
+		if global {
+			var err error
+			path, err = userBunfigPath()
+			if err != nil {
+				return nil, err
+			}
+		}
+		managers = append(managers, packageManagerConfig{
+			Name:    "bun",
+			Path:    path,
+			Enable:  func(registry string) error { return setBunfig(path, strings.TrimRight(registry, "/")) },
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+	return managers, nil
+}
+
+func executableExists(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
 }
 
 func setNPMRC(path, registry string) error {
@@ -192,4 +249,26 @@ func nonEmptyTrailing(lines []string) []string {
 		lines = lines[:len(lines)-1]
 	}
 	return lines
+}
+
+func userNPMRCPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".npmrc"), nil
+}
+
+func userBunfigPath() (string, error) {
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		path := filepath.Join(xdg, ".bunfig.toml")
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".bunfig.toml"), nil
 }
