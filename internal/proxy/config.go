@@ -100,7 +100,7 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 			Disable: func() error { return restoreFile(path) },
 		})
 	}
-	if executableExists("bun") {
+	if bunAvailable() {
 		path := filepath.Join(projectDir, "bunfig.toml")
 		if global {
 			var err error
@@ -122,6 +122,26 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 func executableExists(name string) bool {
 	_, err := exec.LookPath(name)
 	return err == nil
+}
+
+func bunAvailable() bool {
+	if executableExists("bun") {
+		return true
+	}
+	home, _ := os.UserHomeDir()
+	for _, path := range []string{
+		filepath.Join(home, ".bun/bin/bun"),
+		"/opt/homebrew/bin/bun",
+		"/usr/local/bin/bun",
+	} {
+		if path == "" {
+			continue
+		}
+		if info, err := os.Stat(path); err == nil && !info.IsDir() && info.Mode()&0o111 != 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func setNPMRC(path, registry string) error {
@@ -261,9 +281,13 @@ func userNPMRCPath() (string, error) {
 
 func userBunfigPath() (string, error) {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		path := filepath.Join(xdg, ".bunfig.toml")
+		path := filepath.Join(xdg, "bun", "bunfig.toml")
 		if _, err := os.Stat(path); err == nil {
 			return path, nil
+		}
+		legacyPath := filepath.Join(xdg, ".bunfig.toml")
+		if _, err := os.Stat(legacyPath); err == nil {
+			return legacyPath, nil
 		}
 	}
 	home, err := os.UserHomeDir()

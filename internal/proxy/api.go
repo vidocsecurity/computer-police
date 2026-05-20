@@ -233,6 +233,8 @@ func buildStatsFromLedger(path string, start, end time.Time, window string) (api
 	stats := emptyStats(start, end, window)
 	unique := map[string]struct{}{}
 	top := map[string]apiTopPackage{}
+	seenTarballPackage := map[string]struct{}{}
+	var metadataOnly []Event
 	var last time.Time
 	for _, event := range events {
 		ts := eventTime(event)
@@ -245,24 +247,22 @@ func buildStatsFromLedger(path string, start, end time.Time, window string) (api
 		if event.Request.StatusCode == http.StatusForbidden {
 			stats.Blocked++
 		}
-		if event.Request.Type != "tarball" {
+		if event.Request.Package == "" || event.Request.Type == "other" {
 			continue
 		}
-		stats.Installs++
-		if event.Request.Package != "" {
-			unique[event.Request.Package] = struct{}{}
+		if event.Request.Type != "tarball" {
+			metadataOnly = append(metadataOnly, event)
+			continue
 		}
-		manager := event.Client.PackageManagerGuess
-		if manager == "" {
-			manager = "unknown"
+		seenTarballPackage[event.Request.Package] = struct{}{}
+		addStatsEvent(&stats, unique, top, event)
+	}
+	for _, event := range metadataOnly {
+		if _, ok := seenTarballPackage[event.Request.Package]; ok {
+			continue
 		}
-		stats.ByManager[manager]++
-		key := event.Request.Package + "\x00" + event.Request.Version
-		current := top[key]
-		current.Package = event.Request.Package
-		current.Version = event.Request.Version
-		current.Count++
-		top[key] = current
+		addStatsEvent(&stats, unique, top, event)
+		seenTarballPackage[event.Request.Package] = struct{}{}
 	}
 	stats.Unique = len(unique)
 	stats.TopPackages = sortedTopPackages(top, 10)
@@ -270,6 +270,22 @@ func buildStatsFromLedger(path string, start, end time.Time, window string) (api
 		stats.LastUpdatedAt = last.Format(time.RFC3339Nano)
 	}
 	return stats, nil
+}
+
+func addStatsEvent(stats *apiStatsResponse, unique map[string]struct{}, top map[string]apiTopPackage, event Event) {
+	stats.Installs++
+	unique[event.Request.Package] = struct{}{}
+	manager := event.Client.PackageManagerGuess
+	if manager == "" {
+		manager = "unknown"
+	}
+	stats.ByManager[manager]++
+	key := event.Request.Package + "\x00" + event.Request.Version
+	current := top[key]
+	current.Package = event.Request.Package
+	current.Version = event.Request.Version
+	current.Count++
+	top[key] = current
 }
 
 func emptyStats(start, end time.Time, window string) apiStatsResponse {
