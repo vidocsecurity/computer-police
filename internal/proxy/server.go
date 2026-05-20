@@ -169,7 +169,10 @@ func RunForeground(out io.Writer, opts ServerOptions) error {
 	}
 	defer os.Remove(paths.RegistryProxyPIDPath())
 	fmt.Fprintf(out, "Package Police registry proxy listening on http://%s\n", listener.Addr().String())
-	server := &http.Server{Handler: handler}
+	mux := http.NewServeMux()
+	mountAPIHandlers(mux)
+	mux.Handle("/", handler)
+	server := &http.Server{Handler: mux}
 	return server.Serve(listener)
 }
 

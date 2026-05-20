@@ -119,7 +119,12 @@ Usage:
   package-police proxy doctor
   package-police proxy events [--limit N]
 
-Local-only MVP: routes npm-compatible registry traffic through a local pass-through proxy and records request metadata.`)
+Local-only MVP: routes npm-compatible registry traffic through a local pass-through proxy and records request metadata.
+
+When the proxy is running, read-only JSON endpoints are available on the same loopback listener:
+  GET /api/health
+  GET /api/events?limit=50
+  GET /api/stats?window=week`)
 }
 
 func hasFlag(args []string, flag string) bool {
