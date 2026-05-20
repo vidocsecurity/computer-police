@@ -26,7 +26,7 @@ struct PackagePoliceApp: App {
         WindowGroup("PackagePoliceLifecycle") {
             HiddenWindowView()
         }
-        .defaultSize(width: 1, height: 1)
+        .defaultSize(width: 20, height: 20)
         .windowStyle(.hiddenTitleBar)
 
         Settings {
@@ -39,9 +39,22 @@ struct PackagePoliceApp: App {
 private struct HiddenWindowView: View {
     var body: some View {
         Color.clear
-            .frame(width: 1, height: 1)
+            .frame(width: 20, height: 20)
             .onAppear {
-                NSApp.windows.first { $0.title == "PackagePoliceLifecycle" }?.orderOut(nil)
+                if let window = NSApp.windows.first(where: { $0.title == "PackagePoliceLifecycle" }) {
+                    window.styleMask = [.borderless]
+                    window.collectionBehavior = [.auxiliary, .ignoresCycle, .transient, .canJoinAllSpaces]
+                    window.isExcludedFromWindowsMenu = true
+                    window.level = .floating
+                    window.isOpaque = false
+                    window.alphaValue = 0
+                    window.backgroundColor = .clear
+                    window.hasShadow = false
+                    window.ignoresMouseEvents = true
+                    window.canHide = false
+                    window.setContentSize(NSSize(width: 1, height: 1))
+                    window.setFrameOrigin(NSPoint(x: -5000, y: -5000))
+                }
             }
     }
 }

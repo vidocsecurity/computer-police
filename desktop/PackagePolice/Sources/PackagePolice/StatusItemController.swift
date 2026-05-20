@@ -4,21 +4,41 @@ import SwiftUI
 
 @MainActor
 final class StatusItemController: NSObject {
-    private let statusItem: NSStatusItem
+    private let statusBar: NSStatusBar
+    private var statusItem: NSStatusItem
     private let popover = NSPopover()
     private let store: SecurityStore
     private let protection: ProtectionController
     private var cancellables = Set<AnyCancellable>()
+    private var lastKnownScreenCount: Int
+    private var pendingScreenChangePreviousCount: Int?
+    private var screenChangeVisibilityTask: Task<Void, Never>?
 
     init(store: SecurityStore, protection: ProtectionController) {
         self.store = store
         self.protection = protection
-        self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        self.statusBar = .system
+        self.statusItem = Self.makeStatusItem(statusBar: statusBar)
+        self.lastKnownScreenCount = NSScreen.screens.count
         super.init()
         configurePopover()
         configureButton()
         bindStore()
         updateIcon()
+        scheduleStartupStatusItemVisibilityCheck()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleScreenParametersDidChange(_:)),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil)
+    }
+
+    private static func makeStatusItem(statusBar: NSStatusBar) -> NSStatusItem {
+        let item = statusBar.statusItem(withLength: 30)
+        item.autosaveName = "dev.packagepolice.status-item"
+        item.isVisible = true
+        item.button?.imageScaling = .scaleProportionallyUpOrDown
+        return item
     }
 
     private func configurePopover() {
@@ -29,11 +49,20 @@ final class StatusItemController: NSObject {
 
     private func configureButton() {
         guard let button = statusItem.button else { return }
-        button.image = NSImage(systemSymbolName: "shield.lefthalf.filled", accessibilityDescription: "Package Police")
-        button.image?.isTemplate = true
+        if let image = NSImage(systemSymbolName: "shield.fill", accessibilityDescription: "Package Police") {
+            let configuration = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+            image.isTemplate = true
+            button.image = image.withSymbolConfiguration(configuration) ?? image
+            button.imagePosition = .imageOnly
+            button.title = ""
+        } else {
+            statusItem.length = NSStatusItem.variableLength
+            button.title = "PP"
+        }
         button.action = #selector(togglePopover)
         button.target = self
         button.toolTip = "Package Police"
+        statusItem.isVisible = true
     }
 
     private func bindStore() {
@@ -59,8 +88,79 @@ final class StatusItemController: NSObject {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        button.contentTintColor = iconColor
+        button.contentTintColor = .labelColor
+        button.image?.isTemplate = true
+        if button.image == nil {
+            statusItem.length = NSStatusItem.variableLength
+            button.title = "PP"
+        }
         button.toolTip = "Package Police: \(store.protectionState.title)"
+        statusItem.isVisible = true
+    }
+
+    private func recreateStatusItemForVisibilityRecovery(reason: String) {
+        NSLog("Package Police menu bar item did not materialize (%@); recreating it", reason)
+        statusItem.menu = nil
+        statusBar.removeStatusItem(statusItem)
+        statusItem = Self.makeStatusItem(statusBar: statusBar)
+        configureButton()
+        updateIcon()
+    }
+
+    private func scheduleStartupStatusItemVisibilityCheck(appLaunchedAt: Date = Date()) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.checkStartupStatusItemVisibility(appLaunchedAt: appLaunchedAt)
+            }
+        }
+    }
+
+    private func checkStartupStatusItemVisibility(appLaunchedAt: Date, now: Date = Date()) {
+        let snapshot = StatusItemVisibilitySnapshot(statusItem)
+        guard now.timeIntervalSince(appLaunchedAt) <= 10, snapshot.shouldRecover else { return }
+        recreateStatusItemForVisibilityRecovery(reason: "startup snapshot: \(snapshot)")
+
+        let recoveredSnapshot = StatusItemVisibilitySnapshot(statusItem)
+        if recoveredSnapshot.shouldRecover {
+            NSLog("Package Police menu bar item is still hidden after recreation: %@", recoveredSnapshot.description)
+            MenuBarVisibilityGuidance.presentIfNeeded()
+        }
+    }
+
+    @objc private func handleScreenParametersDidChange(_ notification: Notification) {
+        _ = notification
+        let previousScreenCount = max(pendingScreenChangePreviousCount ?? lastKnownScreenCount, lastKnownScreenCount)
+        let currentScreenCount = NSScreen.screens.count
+        pendingScreenChangePreviousCount = previousScreenCount
+        lastKnownScreenCount = currentScreenCount
+        scheduleScreenChangeStatusItemVisibilityCheck(
+            previousScreenCount: previousScreenCount,
+            currentScreenCount: currentScreenCount)
+    }
+
+    private func scheduleScreenChangeStatusItemVisibilityCheck(
+        previousScreenCount: Int,
+        currentScreenCount: Int)
+    {
+        screenChangeVisibilityTask?.cancel()
+        screenChangeVisibilityTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(750))
+            } catch {
+                return
+            }
+            self?.checkScreenChangeStatusItemVisibility(
+                previousScreenCount: previousScreenCount,
+                currentScreenCount: currentScreenCount)
+        }
+    }
+
+    private func checkScreenChangeStatusItemVisibility(previousScreenCount: Int, currentScreenCount: Int) {
+        pendingScreenChangePreviousCount = nil
+        let snapshot = StatusItemVisibilitySnapshot(statusItem)
+        let lostScreen = currentScreenCount < previousScreenCount && snapshot.isVisible
+        guard snapshot.shouldRecover || lostScreen else { return }
+        recreateStatusItemForVisibilityRecovery(reason: "screen change snapshot: \(snapshot)")
     }
 
     private var iconColor: NSColor {
@@ -73,6 +173,79 @@ final class StatusItemController: NSObject {
             return .systemRed
         case .off:
             return .secondaryLabelColor
+        }
+    }
+
+    deinit {
+        screenChangeVisibilityTask?.cancel()
+        NotificationCenter.default.removeObserver(self)
+    }
+}
+
+private struct StatusItemVisibilitySnapshot: CustomStringConvertible {
+    let isVisible: Bool
+    let hasButton: Bool
+    let hasWindow: Bool
+    let hasScreen: Bool
+    let isOnCurrentScreen: Bool
+    let buttonWidth: CGFloat
+
+    @MainActor
+    init(_ item: NSStatusItem) {
+        let screen = item.button?.window?.screen
+        self.isVisible = item.isVisible
+        self.hasButton = item.button != nil
+        self.hasWindow = item.button?.window != nil
+        self.hasScreen = screen != nil
+        self.isOnCurrentScreen = screen.map(Self.isCurrentScreen) ?? false
+        self.buttonWidth = item.button?.frame.size.width ?? 0
+    }
+
+    var shouldRecover: Bool {
+        guard isVisible else { return false }
+        guard hasButton else { return true }
+        return !hasWindow || !hasScreen || !isOnCurrentScreen || buttonWidth <= 0
+    }
+
+    var description: String {
+        "visible=\(isVisible),button=\(hasButton),window=\(hasWindow),screen=\(hasScreen),currentScreen=\(isOnCurrentScreen),width=\(String(format: "%.1f", Double(buttonWidth)))"
+    }
+
+    @MainActor
+    private static func isCurrentScreen(_ screen: NSScreen) -> Bool {
+        let screenNumber = self.screenNumber(screen)
+        return NSScreen.screens.contains { candidate in
+            if let screenNumber, let candidateNumber = self.screenNumber(candidate) {
+                return candidateNumber == screenNumber
+            }
+            return candidate === screen
+        }
+    }
+
+    private static func screenNumber(_ screen: NSScreen) -> NSNumber? {
+        screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+    }
+}
+
+@MainActor
+private enum MenuBarVisibilityGuidance {
+    private static let guidanceShownKey = "packagePoliceMenuBarGuidanceShownAt"
+    private static let guidanceRepeatInterval: TimeInterval = 24 * 60 * 60
+    private static let settingsURL = URL(string: "x-apple.systempreferences:com.apple.MenuBarSettings")
+
+    static func presentIfNeeded(defaults: UserDefaults = .standard, now: Date = Date()) {
+        let lastShownAt = defaults.double(forKey: guidanceShownKey)
+        guard lastShownAt == 0 || now.timeIntervalSince1970 - lastShownAt >= guidanceRepeatInterval else { return }
+        defaults.set(now.timeIntervalSince1970, forKey: guidanceShownKey)
+
+        let alert = NSAlert()
+        alert.messageText = "Package Police can't show its menu bar icon"
+        alert.informativeText = "macOS is running Package Police, but it may be hiding the icon in Menu Bar settings. Open Menu Bar settings and allow Package Police in the menu bar."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open Menu Bar Settings")
+        alert.addButton(withTitle: "Dismiss")
+        if alert.runModal() == .alertFirstButtonReturn, let settingsURL {
+            NSWorkspace.shared.open(settingsURL)
         }
     }
 }
