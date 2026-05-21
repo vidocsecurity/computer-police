@@ -20,7 +20,7 @@ final class ProtectionController: ObservableObject {
         self.notifier = notifier
         self.heartbeat = Heartbeat(client: client)
         self.heartbeat.onResult = { [weak self] result in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.handleHeartbeat(result)
             }
         }

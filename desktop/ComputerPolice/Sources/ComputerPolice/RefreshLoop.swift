@@ -22,7 +22,9 @@ final class RefreshLoop {
         stop()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: store.refreshInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
+            Task { @MainActor [weak self] in
+                self?.refresh()
+            }
         }
     }
 
