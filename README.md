@@ -1,6 +1,6 @@
 <h1 align="center">Computer Police</h1>
 
-<p align="center"><strong>A local supply-chain firewall for your computer — and every agent on it.</strong></p>
+<p align="center"><strong>Blocks known-malicious package installs before they touch your disk.</strong></p>
 
 <p align="center">
   <a href="https://github.com/vidocsecurity/computer-police/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/vidocsecurity/computer-police?style=flat-square&color=0a0a0c" /></a>
@@ -18,15 +18,21 @@
 
 ---
 
-Computer Police is an open-source tool that stops your machine from installing malicious packages — the kind that keep showing up in `npm`, `PyPI`, and every other public registry.
+Computer Police protects developers and coding agents from installing known-malicious packages.
 
-It runs locally as a registry proxy that sits between your package manager and the internet. Every install request is checked against the public [OSV](https://osv.dev) malicious-package advisory feed (`MAL-*`) and blocked with an HTTP `403` before any code touches your disk. It needs no root, no kernel extension, no system-wide proxy, and nothing about your installs ever leaves your machine.
+It exists because modern development environments run package installs automatically: AI agents, CI jobs, devcontainers, remote sandboxes, and local scripts all call `npm install`, `pip install`, `uv add`, and similar commands on your behalf. If one of those commands pulls a package version that has been confirmed as malware, the damage happens before you ever review the diff.
 
-It's built for the agent era. Claude Code, Codex, OpenCode, Cursor's agent, and any custom harness install packages constantly on your behalf — and they have no idea when one of them is malware. Computer Police is the seatbelt.
+Computer Police adds one narrow safety layer: it runs a local registry proxy on `127.0.0.1`, points supported package managers at it, and blocks package versions that match public [OSV](https://osv.dev) `MAL-*` malware advisories. Everything else passes through.
+
+It is intentionally low-noise. It is not a vulnerability scanner, license scanner, static analyzer, or "suspicious package" heuristic. If Computer Police blocks an install, the package version is already listed as malware by a public advisory source.
+
+It is designed not to take over your system. It does not need root, does not install a kernel extension, does not modify package binaries, and does not use a system-wide proxy. It only changes package-manager registry config so installs go through `http://127.0.0.1:4873/`, and `computer-police uninstall` restores the config it changed.
 
 ## Install
 
-One-liner for macOS, Linux, and Windows (via WSL or Git Bash):
+Computer Police is safe to try: it runs locally, needs no root, and can be fully removed with `computer-police uninstall`.
+
+One-liner for macOS, Linux, and Windows via WSL or Git Bash:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
@@ -49,6 +55,29 @@ computer-police self uninstall
 
 Both go through the same signed installer script, with the same checksum verification.
 
+### What changes on my machine?
+
+When you run `computer-police install`, it:
+
+- starts a local proxy on `127.0.0.1:4873`;
+- configures supported package managers to use that proxy;
+- stores a local install ledger under `~/.computer-police/`;
+- downloads and refreshes the public OSV malicious-package advisory snapshot.
+
+It does **not**:
+
+- require `sudo`;
+- install a browser extension, kernel extension, launch daemon, or system proxy;
+- upload package names, lockfiles, install history, or project data;
+- change your dependencies, lockfiles, package-manager binaries, or source code.
+
+To undo it:
+
+```bash
+computer-police uninstall
+computer-police self uninstall
+```
+
 ## Quickstart
 
 Sixty seconds to your first block.
@@ -69,7 +98,7 @@ computer-police ledger list --limit 20
 
 When you're done, `computer-police uninstall` stops the proxy and restores every package-manager config file it changed.
 
-## Principles
+## Design goals
 
 These are the rules we hold ourselves to. Each of them is a deliberate constraint, not an aspiration.
 
@@ -79,6 +108,8 @@ These are the rules we hold ourselves to. Each of them is a deliberate constrain
 - **Local-first and private by design.** Your install events, package names, and lockfiles never leave your machine. The only outbound network call is fetching the public OSV advisory snapshot.
 - **No elevated privileges.** No `sudo`, no kernel hooks, no system proxy. Just a loopback HTTP listener and reversible edits to your package-manager config.
 - **Open source and auditable.** Every blocking decision, every advisory source, and every config change is in this repository.
+
+Computer Police is not trying to replace Snyk, Dependabot, `npm audit`, Socket, Phylum, or a full supply-chain security platform. It does one thing at install time: block package versions already confirmed as malware.
 
 ## How it works
 
