@@ -38,6 +38,9 @@ struct DiagnosticsView: View {
         DottedLeaderRow(key: "Proxy", value: store.proxyStatus.rawValue)
         DottedLeaderRow(key: "Registry", value: store.registryStatus.rawValue)
         DottedLeaderRow(key: "Advisories", value: advisorySummary)
+        if let status = store.advisoryStatus {
+            DottedLeaderRow(key: "List age", value: status.freshnessSummary)
+        }
         DottedLeaderRow(key: "PID", value: store.health.map { String($0.pid) } ?? "—")
         DottedLeaderRow(key: "Address", value: store.health?.address ?? "127.0.0.1:4873")
         DottedLeaderRow(
@@ -73,6 +76,6 @@ struct DiagnosticsView: View {
         if status.state == "error" {
             return "Error: \(status.lastError ?? "unknown error")"
         }
-        return "\(status.state.capitalized), \(status.advisoryCount) rules"
+        return "\(status.state.capitalized), \(status.advisoryCount) rules, \(status.freshnessSummary)"
     }
 }

@@ -161,7 +161,7 @@ private struct ComponentSnapshot: Identifiable {
         case "ready":
             return ComponentSnapshot(
                 label: "Malware",
-                value: "\(status.advisoryCount) rules",
+                value: "\(status.advisoryCount) rules, \(status.freshnessSummary)",
                 state: .ok)
         case "syncing":
             let detail: String
@@ -173,7 +173,7 @@ private struct ComponentSnapshot: Identifiable {
             }
             return ComponentSnapshot(label: "Malware", value: detail, state: .warn)
         case "stale":
-            return ComponentSnapshot(label: "Malware", value: "Stale", state: .warn)
+            return ComponentSnapshot(label: "Malware", value: "Stale, \(status.freshnessSummary)", state: .warn)
         case "error":
             return ComponentSnapshot(label: "Malware", value: "Error", state: .fail)
         default:

@@ -65,6 +65,20 @@ public struct MalwareAdvisoryStatus: Codable, Equatable, Sendable {
     public let lastError: String?
     public let downloadedBytes: Int64?
     public let totalBytes: Int64?
+    public let ageSeconds: Int64?
+    public let refreshIntervalSeconds: Int64?
+    public let freshForSeconds: Int64?
+    public let staleBySeconds: Int64?
+
+    public var freshnessSummary: String {
+        if let staleBySeconds, staleBySeconds > 0 {
+            return "stale by \(Self.shortDuration(staleBySeconds))"
+        }
+        if let ageSeconds {
+            return "updated \(Self.shortDuration(ageSeconds)) ago"
+        }
+        return "freshness unknown"
+    }
 
     enum CodingKeys: String, CodingKey {
         case state
@@ -77,6 +91,20 @@ public struct MalwareAdvisoryStatus: Codable, Equatable, Sendable {
         case lastError = "last_error"
         case downloadedBytes = "downloaded_bytes"
         case totalBytes = "total_bytes"
+        case ageSeconds = "age_seconds"
+        case refreshIntervalSeconds = "refresh_interval_seconds"
+        case freshForSeconds = "fresh_for_seconds"
+        case staleBySeconds = "stale_by_seconds"
+    }
+
+    private static func shortDuration(_ seconds: Int64) -> String {
+        let seconds = max(0, seconds)
+        if seconds < 60 { return "\(seconds)s" }
+        let minutes = seconds / 60
+        if minutes < 60 { return "\(minutes)m" }
+        let hours = minutes / 60
+        if hours < 48 { return "\(hours)h" }
+        return "\(hours / 24)d"
     }
 }
 
