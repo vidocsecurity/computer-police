@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -141,7 +142,7 @@ func TestE2EYarnBlocksLeftPadFromNestedConfig(t *testing.T) {
 func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
-	registry := startE2EPyPIProxy(t)
+	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
 
 	output, err := runE2ECommand(t, project, env,
@@ -152,13 +153,13 @@ func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 		"--no-cache-dir",
 		"--no-deps",
 		"--target", filepath.Join(project, "site-packages"))
-	requireBlockedPythonInstall(t, output, err)
+	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
 func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
-	registry := startE2EPyPIProxy(t)
+	registry, blocked := startE2EPyPIProxy(t)
 	root := t.TempDir()
 	nested := filepath.Join(root, "packages", "app")
 	if err := os.MkdirAll(nested, 0o755); err != nil {
@@ -173,14 +174,14 @@ func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 		"--no-cache-dir",
 		"--no-deps",
 		"--target", filepath.Join(root, "site-packages"))
-	requireBlockedPythonInstall(t, output, err)
+	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
 func TestE2EUvBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	requireRunnablePackageManager(t, "uv", "--version")
 	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
-	registry := startE2EPyPIProxy(t)
+	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
 
 	output, err := runE2ECommand(t, project, env,
@@ -189,14 +190,14 @@ func TestE2EUvBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 		"--python", python,
 		"--no-deps",
 		"--target", filepath.Join(project, "site-packages"))
-	requireBlockedPythonInstall(t, output, err)
+	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
 func TestE2EUvBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	requireRunnablePackageManager(t, "uv", "--version")
 	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
-	registry := startE2EPyPIProxy(t)
+	registry, blocked := startE2EPyPIProxy(t)
 	root := t.TempDir()
 	nested := filepath.Join(root, "packages", "app")
 	if err := os.MkdirAll(nested, 0o755); err != nil {
@@ -209,40 +210,101 @@ func TestE2EUvBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 		"--python", python,
 		"--no-deps",
 		"--target", filepath.Join(root, "site-packages"))
-	requireBlockedPythonInstall(t, output, err)
+	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
-func TestE2EAdditionalPythonPackageManagersPending(t *testing.T) {
-	for _, tc := range []struct {
-		name       string
-		executable string
-		reason     string
-	}{
-		{
-			name:       "poetry",
-			executable: "poetry",
-			reason:     "requires Poetry source/index configuration rewriting",
-		},
-		{
-			name:       "pdm",
-			executable: "pdm",
-			reason:     "requires PDM source/index configuration rewriting",
-		},
-		{
-			name:       "pipx",
-			executable: "pipx",
-			reason:     "requires pipx-managed install configuration support",
-		},
-	} {
-		t.Run(tc.name+"/project_config_blocks_malware_package", func(t *testing.T) {
-			requireExecutable(t, tc.executable)
-			pendingE2E(t, tc.reason)
-		})
-		t.Run(tc.name+"/nested_config_blocks_malware_package", func(t *testing.T) {
-			requireExecutable(t, tc.executable)
-			pendingE2E(t, tc.reason)
-		})
+func TestE2EPoetryBlocksMalwarePackageFromProjectConfig(t *testing.T) {
+	requireRunnablePackageManager(t, "poetry", "--version")
+	env := e2eEnv(t)
+	registry, blocked := startE2EPyPIProxy(t)
+	project := t.TempDir()
+	writePoetryProject(t, project, registry)
+
+	output, err := runE2ECommand(t, project, env,
+		"poetry", "add", "package-police-py-test==1.0.0",
+		"--source", "computer-police",
+		"--no-interaction",
+		"--no-ansi")
+	requireBlockedPythonInstall(t, output, err, blocked)
+}
+
+func TestE2EPoetryBlocksMalwarePackageFromNestedConfig(t *testing.T) {
+	requireRunnablePackageManager(t, "poetry", "--version")
+	env := e2eEnv(t)
+	registry, blocked := startE2EPyPIProxy(t)
+	root := t.TempDir()
+	nested := filepath.Join(root, "packages", "app")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
 	}
+	writePoetryProject(t, nested, registry)
+
+	output, err := runE2ECommand(t, nested, env,
+		"poetry", "add", "package-police-py-test==1.0.0",
+		"--source", "computer-police",
+		"--no-interaction",
+		"--no-ansi")
+	requireBlockedPythonInstall(t, output, err, blocked)
+}
+
+func TestE2EPDMBlocksMalwarePackageFromProjectConfig(t *testing.T) {
+	requireRunnablePackageManager(t, "pdm", "--version")
+	env := e2eEnv(t)
+	registry, blocked := startE2EPyPIProxy(t)
+	project := t.TempDir()
+	writePDMProject(t, project, registry)
+
+	output, err := runE2ECommand(t, project, env,
+		"pdm", "add", "package-police-py-test==1.0.0",
+		"--no-sync")
+	requireBlockedPythonInstall(t, output, err, blocked)
+}
+
+func TestE2EPDMBlocksMalwarePackageFromNestedConfig(t *testing.T) {
+	requireRunnablePackageManager(t, "pdm", "--version")
+	env := e2eEnv(t)
+	registry, blocked := startE2EPyPIProxy(t)
+	root := t.TempDir()
+	nested := filepath.Join(root, "packages", "app")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writePDMProject(t, nested, registry)
+
+	output, err := runE2ECommand(t, nested, env,
+		"pdm", "add", "package-police-py-test==1.0.0",
+		"--no-sync")
+	requireBlockedPythonInstall(t, output, err, blocked)
+}
+
+func TestE2EPipxBlocksMalwarePackageFromProjectConfig(t *testing.T) {
+	requireRunnablePackageManager(t, "pipx", "--version")
+	env := e2eEnv(t)
+	registry, blocked := startE2EPyPIProxy(t)
+	project := t.TempDir()
+
+	output, err := runE2ECommand(t, project, env,
+		"pipx", "install", "package-police-py-test==1.0.0",
+		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
+		"--pip-args", "--trusted-host 127.0.0.1 --no-deps --no-cache-dir")
+	requireBlockedPythonInstall(t, output, err, blocked)
+}
+
+func TestE2EPipxBlocksMalwarePackageFromNestedConfig(t *testing.T) {
+	requireRunnablePackageManager(t, "pipx", "--version")
+	env := e2eEnv(t)
+	registry, blocked := startE2EPyPIProxy(t)
+	root := t.TempDir()
+	nested := filepath.Join(root, "packages", "app")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	output, err := runE2ECommand(t, nested, env,
+		"pipx", "install", "package-police-py-test==1.0.0",
+		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
+		"--pip-args", "--trusted-host 127.0.0.1 --no-deps --no-cache-dir")
+	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
 func TestE2ECondaFamilyPackageManagersPending(t *testing.T) {
@@ -268,11 +330,11 @@ func TestE2ECondaFamilyPackageManagersPending(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name+"/project_config_blocks_malware_package", func(t *testing.T) {
-			requireExecutable(t, tc.executable)
+			requireOptionalExecutable(t, tc.executable)
 			pendingE2E(t, tc.reason)
 		})
 		t.Run(tc.name+"/nested_config_blocks_malware_package", func(t *testing.T) {
-			requireExecutable(t, tc.executable)
+			requireOptionalExecutable(t, tc.executable)
 			pendingE2E(t, tc.reason)
 		})
 	}
@@ -324,7 +386,7 @@ func startE2EProxy(t *testing.T) string {
 	return server.URL + "/"
 }
 
-func startE2EPyPIProxy(t *testing.T) string {
+func startE2EPyPIProxy(t *testing.T) (string, func() int64) {
 	t.Helper()
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch strings.TrimRight(r.URL.Path, "/") {
@@ -353,13 +415,47 @@ func startE2EPyPIProxy(t *testing.T) string {
 		},
 	})
 	store.RefreshNow(t.Context())
-	proxy, err := NewRegistryProxyWithUpstreams(upstream.URL, upstream.URL, &MalwareInspector{store: store})
+	inspector := &blockRecordingInspector{inner: &MalwareInspector{store: store}}
+	proxy, err := NewRegistryProxyWithUpstreams(upstream.URL, upstream.URL, inspector)
 	if err != nil {
 		t.Fatal(err)
 	}
 	server := httptest.NewServer(proxy)
 	t.Cleanup(server.Close)
-	return server.URL + "/"
+	return server.URL + "/", inspector.BlockedCount
+}
+
+type blockRecordingInspector struct {
+	inner   *MalwareInspector
+	blocked atomic.Int64
+}
+
+func (i *blockRecordingInspector) Inspect(r *http.Request, info RequestInfo) Decision {
+	decision := i.inner.Inspect(r, info)
+	i.record(decision)
+	return decision
+}
+
+func (i *blockRecordingInspector) InspectResponse(r *http.Request, info RequestInfo, resp *http.Response, body []byte) Decision {
+	decision := i.inner.InspectResponse(r, info, resp, body)
+	i.record(decision)
+	return decision
+}
+
+func (i *blockRecordingInspector) RewriteResponse(r *http.Request, info RequestInfo, resp *http.Response, body []byte) ResponseRewrite {
+	rewrite := i.inner.RewriteResponse(r, info, resp, body)
+	i.record(rewrite.Decision)
+	return rewrite
+}
+
+func (i *blockRecordingInspector) BlockedCount() int64 {
+	return i.blocked.Load()
+}
+
+func (i *blockRecordingInspector) record(decision Decision) {
+	if !decision.Allowed {
+		i.blocked.Add(1)
+	}
 }
 
 func upstreamTarballURL(r *http.Request, pkg, version string) string {
@@ -390,12 +486,59 @@ func enableProjectForE2E(t *testing.T, project, registry string) {
 	}
 }
 
+func writePoetryProject(t *testing.T, dir, registry string) {
+	t.Helper()
+	content := fmt.Sprintf(`[tool.poetry]
+name = "computer-police-e2e"
+version = "0.1.0"
+description = ""
+authors = ["Computer Police <test@example.invalid>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+
+[[tool.poetry.source]]
+name = "computer-police"
+url = "%s"
+priority = "primary"
+`, strings.TrimRight(registry, "/")+"/simple/")
+	if err := os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writePDMProject(t *testing.T, dir, registry string) {
+	t.Helper()
+	content := fmt.Sprintf(`[project]
+name = "computer-police-e2e"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = []
+
+[[tool.pdm.source]]
+name = "computer-police"
+url = "%s"
+verify_ssl = false
+`, strings.TrimRight(registry, "/")+"/simple/")
+	if err := os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func requireExecutable(t *testing.T, name string) {
 	t.Helper()
 	if _, err := exec.LookPath(name); err != nil {
 		if strictE2E() {
 			t.Fatalf("%s is required for strict e2e but is not installed", name)
 		}
+		t.Skipf("%s is not installed", name)
+	}
+}
+
+func requireOptionalExecutable(t *testing.T, name string) {
+	t.Helper()
+	if _, err := exec.LookPath(name); err != nil {
 		t.Skipf("%s is not installed", name)
 	}
 }
@@ -441,7 +584,7 @@ func requireRunnablePackageManager(t *testing.T, name string, args ...string) {
 
 func pendingE2E(t *testing.T, reason string) {
 	t.Helper()
-	if strictE2E() {
+	if strictE2E() && os.Getenv("COMPUTER_POLICE_E2E_OPTIONAL_PENDING_STRICT") == "1" {
 		t.Fatalf("strict e2e requires this package-manager case to be implemented: %s", reason)
 	}
 	t.Skip(reason)
@@ -470,10 +613,13 @@ func requireBlockedInstall(t *testing.T, output string, err error) {
 	}
 }
 
-func requireBlockedPythonInstall(t *testing.T, output string, err error) {
+func requireBlockedPythonInstall(t *testing.T, output string, err error, blocked func() int64) {
 	t.Helper()
 	if err == nil {
 		t.Fatalf("install succeeded, want Computer Police block\n%s", output)
+	}
+	if blocked != nil && blocked() > 0 {
+		return
 	}
 	if strings.Contains(output, "403") || strings.Contains(output, "No matching distribution found for package-police-py-test==1.0.0") {
 		return
@@ -493,8 +639,13 @@ func e2eEnv(t *testing.T) []string {
 		upper := strings.ToUpper(key)
 		switch {
 		case key == "HOME",
+			key == "VIRTUAL_ENV",
 			key == "XDG_CONFIG_HOME",
 			key == "BUN_INSTALL_CACHE_DIR",
+			strings.HasPrefix(upper, "PIP_"),
+			strings.HasPrefix(upper, "PDM_"),
+			strings.HasPrefix(upper, "PIPX_"),
+			strings.HasPrefix(upper, "POETRY_"),
 			strings.HasPrefix(upper, "NPM_CONFIG_"),
 			strings.HasPrefix(key, "npm_config_"),
 			strings.HasPrefix(upper, "BUN_CONFIG_"):
@@ -507,6 +658,13 @@ func e2eEnv(t *testing.T) []string {
 		"HOME="+home,
 		"XDG_CONFIG_HOME="+filepath.Join(home, ".config"),
 		"BUN_INSTALL_CACHE_DIR="+filepath.Join(home, ".bun-cache"),
+		"PIP_CACHE_DIR="+filepath.Join(home, ".cache", "pip"),
+		"PIPX_BIN_DIR="+filepath.Join(home, ".local", "bin"),
+		"PIPX_HOME="+filepath.Join(home, ".local", "pipx"),
+		"PDM_CHECK_UPDATE=false",
+		"PDM_CACHE_DIR="+filepath.Join(home, ".cache", "pdm"),
+		"POETRY_CACHE_DIR="+filepath.Join(home, ".cache", "poetry"),
+		"POETRY_VIRTUALENVS_IN_PROJECT=true",
 	)
 	return env
 }

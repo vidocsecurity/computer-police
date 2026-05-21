@@ -61,8 +61,7 @@ jobs:
         shell: bash
         run: |
           npm install -g pnpm yarn
-          python -m pip install --user uv poetry pdm pipx
-          python -c "import os, site; print(os.path.join(site.USER_BASE, 'Scripts' if os.name == 'nt' else 'bin'))" >> "$GITHUB_PATH"
+          python -m pip install uv poetry pdm pipx
 
       - name: Test Go packages
         run: go test ./... -skip '^TestE2E'

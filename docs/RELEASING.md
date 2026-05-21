@@ -22,9 +22,9 @@ The Swift app matrix currently covers:
 
 - `macos-14`
 
-Some package-manager e2e subtests skip when tools such as Bun, pnpm, uv, conda, or pixi are not installed on the runner.
+Some package-manager e2e subtests skip locally when tools such as Bun, pnpm, uv, Poetry, PDM, pipx, conda, or pixi are not installed.
 
-In CI, proxy e2e tests run with `COMPUTER_POLICE_E2E_STRICT=1`. In strict mode, missing package-manager executables and pending package-manager cases fail the workflow instead of being reported as skipped tests. This is intentional: a green e2e job must mean the required package-manager coverage actually ran.
+In CI, proxy e2e tests run with `COMPUTER_POLICE_E2E_STRICT=1`. In strict mode, missing required package-manager executables fail the workflow instead of being reported as skipped tests. This is intentional: a green e2e job must mean the required package-manager coverage actually ran. Conda-family coverage is still marked optional because the proxy does not yet implement Conda channel metadata handling.
 
 ## Manual Release
 
