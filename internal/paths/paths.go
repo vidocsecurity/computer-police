@@ -6,13 +6,13 @@ import (
 )
 
 func Home() string {
-	if home := os.Getenv("PACKAGE_POLICE_HOME"); home != "" {
+	if home := os.Getenv("COMPUTER_POLICE_HOME"); home != "" {
 		return home
 	}
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".package-police")
+		return filepath.Join(home, ".computer-police")
 	}
-	return ".package-police"
+	return ".computer-police"
 }
 
 func RegistryProxyDir() string { return filepath.Join(Home(), "registry-proxy") }

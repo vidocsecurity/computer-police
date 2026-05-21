@@ -323,8 +323,8 @@ func readExisting(path string) (string, bool, error) {
 }
 
 func backupOriginal(path, content string, existed bool) error {
-	backup := path + ".package-police-backup"
-	marker := path + ".package-police-created"
+	backup := path + ".computer-police-backup"
+	marker := path + ".computer-police-created"
 	if _, err := os.Stat(backup); err == nil {
 		return nil
 	}
@@ -335,8 +335,8 @@ func backupOriginal(path, content string, existed bool) error {
 }
 
 func restoreFile(path string) error {
-	backup := path + ".package-police-backup"
-	marker := path + ".package-police-created"
+	backup := path + ".computer-police-backup"
+	marker := path + ".computer-police-created"
 	if data, err := os.ReadFile(backup); err == nil {
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			return err

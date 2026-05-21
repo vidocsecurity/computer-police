@@ -1,6 +1,6 @@
 {
   "schema_version": "1.6.0",
-  "id": "MAL-2026-PACKAGE-POLICE-LEFT-PAD",
+  "id": "MAL-2026-COMPUTER-POLICE-LEFT-PAD",
   "modified": "2026-05-20T00:00:00Z",
   "published": "2026-05-20T00:00:00Z",
   "summary": "Computer Police test-only malware advisory for left-pad.",

@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
-import PackagePoliceCore
+import ComputerPoliceCore
 
 @main
-struct PackagePoliceApp: App {
+struct ComputerPoliceApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store: SecurityStore
     @StateObject private var protection: ProtectionController
@@ -33,7 +33,7 @@ struct PackagePoliceApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("PackagePoliceLifecycle") {
+        WindowGroup("ComputerPoliceLifecycle") {
             HiddenWindowView()
         }
         .defaultSize(width: 20, height: 20)
@@ -51,7 +51,7 @@ private struct HiddenWindowView: View {
         Color.clear
             .frame(width: 20, height: 20)
             .onAppear {
-                if let window = NSApp.windows.first(where: { $0.title == "PackagePoliceLifecycle" }) {
+                if let window = NSApp.windows.first(where: { $0.title == "ComputerPoliceLifecycle" }) {
                     window.styleMask = [.borderless]
                     window.collectionBehavior = [.auxiliary, .ignoresCycle, .transient, .canJoinAllSpaces]
                     window.isExcludedFromWindowsMenu = true

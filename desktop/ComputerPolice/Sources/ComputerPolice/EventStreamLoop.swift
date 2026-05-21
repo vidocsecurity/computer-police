@@ -1,5 +1,5 @@
 import Foundation
-import PackagePoliceCore
+import ComputerPoliceCore
 
 @MainActor
 final class EventStreamLoop {

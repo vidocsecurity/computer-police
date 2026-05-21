@@ -1,5 +1,5 @@
 import Foundation
-import PackagePoliceCore
+import ComputerPoliceCore
 
 @MainActor
 final class ProtectionController: ObservableObject {
@@ -344,11 +344,11 @@ final class ProtectionController: ObservableObject {
 
     private func proxyEnvironment() -> [String: String] {
         var environment = ProcessInfo.processInfo.environment
-        if environment["PACKAGE_POLICE_OSV_ADVISORY_DIR"] == nil,
+        if environment["COMPUTER_POLICE_OSV_ADVISORY_DIR"] == nil,
            let advisoryDir = Bundle.main.resourceURL?.appendingPathComponent("osv-testdata", isDirectory: true),
            FileManager.default.fileExists(atPath: advisoryDir.path)
         {
-            environment["PACKAGE_POLICE_OSV_ADVISORY_DIR"] = advisoryDir.path
+            environment["COMPUTER_POLICE_OSV_ADVISORY_DIR"] = advisoryDir.path
         }
         return environment
     }

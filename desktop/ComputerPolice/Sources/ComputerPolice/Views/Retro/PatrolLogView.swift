@@ -1,4 +1,4 @@
-import PackagePoliceCore
+import ComputerPoliceCore
 import SwiftUI
 
 /// Replaces `RecentEventsView`. Zebra-striped log with grouped time buckets,

@@ -1,5 +1,5 @@
 import Foundation
-import PackagePoliceCore
+import ComputerPoliceCore
 
 enum ProtectionState: Equatable {
     case off

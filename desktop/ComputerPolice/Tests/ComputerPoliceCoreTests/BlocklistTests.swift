@@ -1,5 +1,5 @@
 import XCTest
-@testable import PackagePoliceCore
+@testable import ComputerPoliceCore
 
 final class BlocklistTests: XCTestCase {
     func testMatchesPackageAndVersion() {

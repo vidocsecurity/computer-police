@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-This is a Go 1.24 monorepo with zero external dependencies. The macOS Swift desktop app (`desktop/PackagePolice/`) cannot be built or tested on Linux.
+This is a Go 1.24 monorepo with zero external dependencies. The macOS Swift desktop app (`desktop/ComputerPolice/`) cannot be built or tested on Linux.
 
 ### Running tests
 
@@ -24,14 +24,14 @@ There is no additional linter configured (no golangci-lint, no staticcheck).
 ### Build
 
 ```bash
-go build -o ./package-police ./cmd/package-police
+go build -o ./computer-police ./cmd/computer-police
 ```
 
 ### Running the proxy (development mode)
 
 ```bash
-export PACKAGE_POLICE_OSV_ADVISORY_DIR=./internal/proxy/testdata/osv
-./package-police proxy start
+export COMPUTER_POLICE_OSV_ADVISORY_DIR=./internal/proxy/testdata/osv
+./computer-police proxy start
 ```
 
 This starts the proxy on `127.0.0.1:4873` using local test OSV advisories (avoids a large download from Google Cloud Storage). The proxy exposes:
@@ -40,7 +40,7 @@ This starts the proxy on `127.0.0.1:4873` using local test OSV advisories (avoid
 - `GET /api/stats?window=week`
 - `GET /api/advisories`
 
-Stop with `./package-police proxy stop`.
+Stop with `./computer-police proxy stop`.
 
 ### Key gotchas
 

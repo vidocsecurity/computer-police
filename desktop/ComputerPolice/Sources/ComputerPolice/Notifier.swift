@@ -1,5 +1,5 @@
 import Foundation
-import PackagePoliceCore
+import ComputerPoliceCore
 import UserNotifications
 
 /// Context attached to a notification when it is posted, so a tap can take
@@ -19,8 +19,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     var onTap: (@MainActor (NotificationTap) -> Void)?
 
     private enum UserInfoKey {
-        static let eventID = "package_police_event_id"
-        static let advisoryID = "package_police_advisory_id"
+        static let eventID = "computer_police_event_id"
+        static let advisoryID = "computer_police_advisory_id"
     }
 
     override init() {

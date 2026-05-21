@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 package_root="$(cd "$script_dir/.." && pwd)"
 repo_root="$(cd "$package_root/../.." && pwd)"
-product_name="PackagePolice"
+product_name="ComputerPolice"
 app_name="Computer Police"
 app_path="$package_root/$app_name.app"
 build_dir="$package_root/.build"

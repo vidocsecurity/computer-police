@@ -1,5 +1,5 @@
 import AppKit
-import PackagePoliceCore
+import ComputerPoliceCore
 import SwiftUI
 
 /// Shared inline detail panel used by both the WANTED list and the patrol log

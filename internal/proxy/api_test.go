@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildStatsFromLedger(t *testing.T) {
-	t.Setenv("PACKAGE_POLICE_HOME", t.TempDir())
+	t.Setenv("COMPUTER_POLICE_HOME", t.TempDir())
 	start := time.Date(2026, 5, 13, 12, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC)
 	path := filepath.Join(t.TempDir(), "events.ndjson")
@@ -64,12 +64,12 @@ func TestReadEventsHonorsSinceAndLimit(t *testing.T) {
 }
 
 func TestAppendEventBroadcastsToSubscribers(t *testing.T) {
-	t.Setenv("PACKAGE_POLICE_HOME", t.TempDir())
+	t.Setenv("COMPUTER_POLICE_HOME", t.TempDir())
 	events := subscribeEvents()
 	defer unsubscribeEvents(events)
 
 	event := fixtureEvent("blocked-1", time.Now().UTC(), "metadata", "left-pad", "1.3.0", http.StatusForbidden, "npm")
-	event.Request.BlockedBy = "MAL-2026-PACKAGE-POLICE-LEFT-PAD"
+	event.Request.BlockedBy = "MAL-2026-COMPUTER-POLICE-LEFT-PAD"
 	event.Request.BlockReason = "blocked for test"
 	if err := appendEvent(event); err != nil {
 		t.Fatal(err)

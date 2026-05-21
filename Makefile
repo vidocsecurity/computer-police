@@ -17,4 +17,4 @@ clean:
 
 test:
 	go test ./...
-	cd desktop/PackagePolice && swift test
+	cd desktop/ComputerPolice && swift test

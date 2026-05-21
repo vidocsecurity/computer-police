@@ -11,7 +11,7 @@ fi
 if command -v bun >/dev/null 2>&1; then
   bunfig="$HOME/.bunfig.toml"
   if [[ -f "$bunfig" ]]; then
-    cp "$bunfig" "$bunfig.package-police-drift-backup"
+    cp "$bunfig" "$bunfig.computer-police-drift-backup"
   fi
   {
     echo "[install]"

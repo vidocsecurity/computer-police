@@ -1,4 +1,4 @@
-import PackagePoliceCore
+import ComputerPoliceCore
 import SwiftUI
 
 /// Renders nothing when there's nothing to do. Shows a "WANTED" panel with

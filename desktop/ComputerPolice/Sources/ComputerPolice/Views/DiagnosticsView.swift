@@ -43,7 +43,7 @@ struct DiagnosticsView: View {
         DottedLeaderRow(
             key: "Ledger",
             value: store.stats.ledgerPath.isEmpty
-                ? "~/.package-police/registry-proxy/events.ndjson"
+                ? "~/.computer-police/registry-proxy/events.ndjson"
                 : store.stats.ledgerPath)
         if let cachePath = store.advisoryStatus?.cachePath, !cachePath.isEmpty {
             DottedLeaderRow(key: "Cache", value: cachePath)

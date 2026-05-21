@@ -23,7 +23,7 @@ This builds the Go CLI, embeds it in `Computer Police.app/Contents/Resources/bin
 To only build the app bundle without installing:
 
 ```bash
-cd desktop/PackagePolice
+cd desktop/ComputerPolice
 ./Scripts/package_app.sh
 open "Computer Police.app"
 ```
@@ -39,6 +39,6 @@ open "Computer Police.app"
 
 ## Mock Blocklist Caveat
 
-The `Vulnerable detected` and `Prevented installs` counts currently use the bundled mock blocklist in `Sources/PackagePoliceCore/Resources/blocklist.json`.
+The `Vulnerable detected` and `Prevented installs` counts currently use the bundled mock blocklist in `Sources/ComputerPoliceCore/Resources/blocklist.json`.
 
 Real install blocking is not wired yet. Until the Go `BlocklistInspector` is implemented, the app labels matched installs as would-have-been-prevented. The Go stats API is already ready to count real blocked events via HTTP `403` responses.

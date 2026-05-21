@@ -1,5 +1,5 @@
 import XCTest
-@testable import PackagePoliceCore
+@testable import ComputerPoliceCore
 
 final class WeeklyDigestTests: XCTestCase {
     func testDigestCountsBlockedMalwarePreventions() {

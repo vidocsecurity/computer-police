@@ -1,4 +1,4 @@
-import PackagePoliceCore
+import ComputerPoliceCore
 import SwiftUI
 
 /// The big front-of-popover panel: Officer Mac on the left, headline on the

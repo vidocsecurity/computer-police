@@ -1,6 +1,6 @@
 import AppKit
 import Combine
-import PackagePoliceCore
+import ComputerPoliceCore
 import SwiftUI
 
 @MainActor
