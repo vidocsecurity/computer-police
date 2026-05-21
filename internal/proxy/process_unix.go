@@ -15,3 +15,7 @@ func configureBackgroundProcess(cmd *exec.Cmd) {
 func signalTerminate(process *os.Process) error {
 	return process.Signal(syscall.SIGTERM)
 }
+
+func processAlive(process *os.Process) bool {
+	return process.Signal(syscall.Signal(0)) == nil
+}

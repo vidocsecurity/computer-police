@@ -10,6 +10,9 @@ app_path="$package_root/$app_name.app"
 build_dir="$package_root/.build"
 embedded_bin_dir="$build_dir/bin"
 export GOCACHE="${GOCACHE:-$repo_root/.build/go-cache}"
+export CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-$package_root/.build/clang-module-cache}"
+
+mkdir -p "$CLANG_MODULE_CACHE_PATH"
 
 mkdir -p "$embedded_bin_dir"
 

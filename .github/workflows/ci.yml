@@ -42,11 +42,28 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: oven-sh/setup-bun@v2
+
       - name: Show Go environment
         run: go env GOOS GOARCH GOVERSION
 
+      - name: Install e2e package managers
+        shell: bash
+        run: |
+          npm install -g pnpm yarn
+          python -m pip install --user uv
+          python -c "import os, site; print(os.path.join(site.USER_BASE, 'Scripts' if os.name == 'nt' else 'bin'))" >> "$GITHUB_PATH"
+
       - name: Test Go packages
-        run: go test ./...
+        run: go test ./... -skip '^TestE2E'
 
       - name: Build CLI
         shell: bash
@@ -54,6 +71,9 @@ jobs:
           ext=""
           if [[ "${{ runner.os }}" == "Windows" ]]; then ext=".exe"; fi
           go build -o "computer-police${ext}" ./cmd/package-police
+
+      - name: Run proxy e2e tests
+        run: go test ./internal/proxy -run '^TestE2E' -v
 
   swift:
     name: Swift macOS app (${{ matrix.os }})

@@ -139,13 +139,13 @@ func TestE2EYarnBlocksLeftPadFromNestedConfig(t *testing.T) {
 }
 
 func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
-	requireExecutable(t, "python3")
+	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
 	registry := startE2EPyPIProxy(t)
 	project := t.TempDir()
 
 	output, err := runE2ECommand(t, project, env,
-		"python3", "-m", "pip", "install", "package-police-py-test==1.0.0",
+		python, "-m", "pip", "install", "package-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--trusted-host", "127.0.0.1",
 		"--disable-pip-version-check",
@@ -156,7 +156,7 @@ func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 }
 
 func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
-	requireExecutable(t, "python3")
+	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
 	registry := startE2EPyPIProxy(t)
 	root := t.TempDir()
@@ -166,7 +166,7 @@ func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	}
 
 	output, err := runE2ECommand(t, nested, env,
-		"python3", "-m", "pip", "install", "package-police-py-test==1.0.0",
+		python, "-m", "pip", "install", "package-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--trusted-host", "127.0.0.1",
 		"--disable-pip-version-check",
@@ -178,7 +178,7 @@ func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 
 func TestE2EUvBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	requireRunnablePackageManager(t, "uv", "--version")
-	python := requireExecutablePath(t, "python3")
+	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
 	registry := startE2EPyPIProxy(t)
 	project := t.TempDir()
@@ -194,7 +194,7 @@ func TestE2EUvBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 
 func TestE2EUvBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	requireRunnablePackageManager(t, "uv", "--version")
-	python := requireExecutablePath(t, "python3")
+	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
 	registry := startE2EPyPIProxy(t)
 	root := t.TempDir()
@@ -404,6 +404,17 @@ func requireExecutablePath(t *testing.T, name string) string {
 		t.Skipf("%s is not installed", name)
 	}
 	return path
+}
+
+func requirePythonExecutablePath(t *testing.T) string {
+	t.Helper()
+	for _, name := range []string{"python3", "python"} {
+		if path, err := exec.LookPath(name); err == nil {
+			return path
+		}
+	}
+	t.Skip("python3/python is not installed")
+	return ""
 }
 
 func requireRunnablePackageManager(t *testing.T, name string, args ...string) {
