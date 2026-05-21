@@ -16,13 +16,11 @@ The Go matrix currently covers:
 - `ubuntu-latest` amd64
 - `ubuntu-24.04-arm` arm64
 - `macos-14` arm64
-- `macos-13` amd64
 - `windows-latest` amd64
 
 The Swift app matrix currently covers:
 
 - `macos-14`
-- `macos-13`
 
 Some package-manager e2e subtests skip when tools such as Bun, pnpm, uv, conda, or pixi are not installed on the runner.
 
