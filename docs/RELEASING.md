@@ -64,6 +64,58 @@ VERSION=v0.1.0 ./scripts/release/package_macos_app.sh
 
 Artifacts are written to `dist/`.
 
+## Public Installer
+
+The public install entrypoint is:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
+```
+
+To pin a version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --version v0.1.0
+```
+
+The installer detects the user's OS and CPU architecture, downloads the matching GitHub Release artifact, downloads the release checksum file, verifies SHA-256 before extraction, and installs:
+
+- macOS: `Computer Police.app` plus the bundled `computer-police` CLI.
+- Linux: the `computer-police` CLI.
+- Windows from Git Bash/MSYS/Cygwin: the `computer-police.exe` CLI.
+
+By default the CLI is installed to `~/.computer-police/bin`. Use `--install-dir <path>` to choose another location and `--no-modify-path` to skip shell profile edits.
+
+## Updates and Uninstall
+
+Users can update by rerunning the installer or by running:
+
+```bash
+computer-police self update
+```
+
+They can uninstall the public install with:
+
+```bash
+computer-police self uninstall
+```
+
+or:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --uninstall
+```
+
+Uninstall removes the public binary and macOS app bundle, and best-effort disables/stops the local proxy. It intentionally leaves ledger and configuration data in `~/.computer-police` for auditability.
+
+## Installer Smoke Test
+
+The Linux installer flow can be tested end-to-end against locally generated release-shaped artifacts:
+
+```bash
+./scripts/test-public-installer.sh
+```
+
 ## Next: CodexBar-Style Auto-Updates
 
 CodexBar uses Sparkle for direct-download macOS auto-updates. To match that fully, Computer Police still needs:
