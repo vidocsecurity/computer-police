@@ -73,20 +73,19 @@ The install one-liner advertised everywhere is:
 curl -fsSL https://computer.police.dev/install | bash
 ```
 
-`site/install` is a verbatim copy of `scripts/install.sh` checked into
-the repo so the host (Cloudflare Pages today, any static host
-tomorrow) can serve it as a plain file with no redirect hop. The Go
-binary's `self update` flow downloads the same URL.
+`computer.police.dev/install` is a `302` redirect to
+`scripts/install.sh` on the `main` branch of the GitHub repository.
+The redirect rule lives in `site/_redirects`, which Cloudflare Pages
+(and Netlify) read at build time. `curl -fsSL` follows redirects, so
+the pipe-to-bash flow lands on the canonical script with no copy in
+this directory — there is a single source of truth (`scripts/install.sh`)
+and edits there go live immediately on the next `main` push without a
+site rebuild.
 
-After editing `scripts/install.sh`, sync the copy and commit both:
-
-```bash
-cp scripts/install.sh site/install
-git add scripts/install.sh site/install
-```
-
-CI enforces this: the `site` job in `.github/workflows/ci.yml` fails if
-`site/install` ever drifts from `scripts/install.sh`.
+If the site is ever moved to a host that does not support `_redirects`
+(GitHub Pages, S3 with default config), replicate the redirect in the
+host's native rewrite layer or check `scripts/install.sh` into
+`site/install` and add a CI check to keep them in sync.
 
 ## Updating content
 

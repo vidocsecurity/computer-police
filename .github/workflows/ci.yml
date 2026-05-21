@@ -111,20 +111,3 @@ jobs:
 
       - name: Package macOS app
         run: VERSION=ci ./scripts/release/package_macos_app.sh
-
-  site:
-    name: Site assets
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify site/install matches scripts/install.sh
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! diff -q scripts/install.sh site/install; then
-            echo "::error::site/install is out of sync with scripts/install.sh."
-            echo "Run: cp scripts/install.sh site/install && git add site/install"
-            exit 1
-          fi
-          echo "site/install is in sync with scripts/install.sh."

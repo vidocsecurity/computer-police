@@ -1,0 +1,14 @@
+# Cloudflare Pages / Netlify redirect rules.
+#
+# Public install one-liner:
+#
+#   curl -fsSL https://computer.police.dev/install | bash
+#
+# /install is a 302 redirect to scripts/install.sh on the main branch of
+# the GitHub repository. curl -fsSL follows redirects, so the pipe-to-bash
+# flow lands on the canonical script with no copy in this directory.
+#
+# Format: <from> <to> [status]
+# Docs: https://developers.cloudflare.com/pages/configuration/redirects/
+
+/install   https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh   302
