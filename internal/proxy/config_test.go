@@ -69,6 +69,42 @@ func TestEnableDisableProjectRestoresCustomRegistries(t *testing.T) {
 	}
 }
 
+func TestDisableGlobalRestoresBackupsWithoutPackageManagers(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", t.TempDir())
+
+	npmrc := filepath.Join(home, ".npmrc")
+	originalNPMRC := "registry=https://registry.example.test/npm/\n"
+	if err := os.WriteFile(npmrc, []byte("registry=http://127.0.0.1:4873/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(npmrc+".computer-police-backup", []byte(originalNPMRC), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	bunfig := filepath.Join(home, ".bunfig.toml")
+	originalBunfig := "[install]\nregistry = \"https://registry.example.test/bun/\"\n"
+	if err := os.WriteFile(bunfig, []byte("[install]\nregistry = \"http://127.0.0.1:4873\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bunfig+".computer-police-backup", []byte(originalBunfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := DisableProject(&out, DisableOptions{Global: true}); err != nil {
+		t.Fatalf("DisableProject failed without package managers on PATH: %v\n%s", err, out.String())
+	}
+
+	if restored := readFile(t, npmrc); restored != originalNPMRC {
+		t.Fatalf(".npmrc was not restored\nwant:\n%s\ngot:\n%s", originalNPMRC, restored)
+	}
+	if restored := readFile(t, bunfig); restored != originalBunfig {
+		t.Fatalf(".bunfig.toml was not restored\nwant:\n%s\ngot:\n%s", originalBunfig, restored)
+	}
+}
+
 func TestEnableDisableProjectRemovesCreatedRegistryFiles(t *testing.T) {
 	project := t.TempDir()
 	fakeBin := t.TempDir()
@@ -232,6 +268,58 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 	}
 }
 
+func TestEnableDisableGlobalPrefersExistingLegacyPipConfig(t *testing.T) {
+	home := t.TempDir()
+	configHome := filepath.Join(home, ".config")
+	fakeBin := t.TempDir()
+	t.Setenv("PATH", fakeBin)
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("APPDATA", configHome)
+	t.Setenv("LOCALAPPDATA", configHome)
+	writeFakeExecutable(t, fakeBin, "pip")
+
+	legacyPipConf := filepath.Join(home, ".pip", pipConfigFileName())
+	if err := os.MkdirAll(filepath.Dir(legacyPipConf), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	originalPipConf := "[global]\nindex-url = https://legacy-pypi.example.test/simple/\n"
+	if err := os.WriteFile(legacyPipConf, []byte(originalPipConf), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	modernPipConf := filepath.Join(configHome, "pip", pipConfigFileName())
+
+	var out bytes.Buffer
+	proxyRegistry := "http://127.0.0.1:4873/"
+	if err := EnableProject(&out, EnableOptions{
+		ProjectDir:  t.TempDir(),
+		RegistryURL: proxyRegistry,
+		Global:      true,
+	}); err != nil {
+		t.Fatalf("EnableProject failed: %v\n%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), legacyPipConf) {
+		t.Fatalf("legacy pip config was not selected:\n%s", out.String())
+	}
+	if _, err := os.Stat(modernPipConf); !os.IsNotExist(err) {
+		t.Fatalf("modern pip config should not be created when legacy config exists: %v", err)
+	}
+	if enabled := readFile(t, legacyPipConf); !strings.Contains(enabled, "index-url = http://127.0.0.1:4873/simple/") {
+		t.Fatalf("legacy pip config was not pointed at proxy:\n%s", enabled)
+	}
+
+	out.Reset()
+	if err := DisableProject(&out, DisableOptions{
+		ProjectDir: t.TempDir(),
+		Global:     true,
+	}); err != nil {
+		t.Fatalf("DisableProject failed: %v\n%s", err, out.String())
+	}
+	if restored := readFile(t, legacyPipConf); restored != originalPipConf {
+		t.Fatalf("legacy pip config was not restored\nwant:\n%s\ngot:\n%s", originalPipConf, restored)
+	}
+}
+
 func TestEnableDisableGlobalRemovesSharedPipConfigWhenCreated(t *testing.T) {
 	home := t.TempDir()
 	configHome := filepath.Join(home, ".config")
@@ -376,6 +464,13 @@ func writeFakeExecutable(t *testing.T, dir, name string) {
 	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func pipConfigFileName() string {
+	if runtime.GOOS == "windows" {
+		return "pip.ini"
+	}
+	return "pip.conf"
 }
 
 func readFile(t *testing.T, path string) string {

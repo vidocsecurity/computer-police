@@ -189,6 +189,14 @@ struct PreferencesView: View {
                         .font(.retroCaption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 4) {
+                        Text("Made by")
+                            .font(.retroCaption)
+                            .foregroundStyle(.secondary)
+                        Link("Vidoc Security Lab", destination: URL(string: "https://www.vidocsecurity.com/")!)
+                            .font(.retroCaption)
+                    }
+                    .padding(.top, 2)
                 }
             }
         }

@@ -16,9 +16,9 @@ struct DashboardView: View {
                     CaughtPosterView(store: store)
                     StatusPillView(store: store)
                     StatStripView(
-                        installs: store.digest.installsThisWeek,
-                        caught: store.digest.malwarePreventionCount,
-                        blocked: store.digest.preventedCount)
+                        scanned: store.digest.installsThisWeek,
+                        clean: max(0, store.digest.installsThisWeek - store.digest.malwarePreventionCount),
+                        caught: store.digest.malwarePreventionCount)
                     RecommendedActionsView(store: store, protection: protection)
                     PatrolLogView(events: store.digest.recentEvents, store: store)
                     if diagnosticsExpanded {
@@ -41,6 +41,7 @@ struct DashboardView: View {
                 }
                 .buttonStyle(BracketButtonStyle())
                 Spacer()
+                attribution
                 Button("Quit") { NSApp.terminate(nil) }
                     .buttonStyle(BracketButtonStyle())
             }
@@ -60,5 +61,19 @@ struct DashboardView: View {
         case .degraded: return "Backup needed"
         case .failed: return "Down"
         }
+    }
+
+    /// Subtle attribution rendered between the main toolbar buttons and Quit.
+    /// Uses a `Link` so it opens the Vidoc Security Lab site in the user's
+    /// default browser without us reaching for `NSWorkspace`.
+    private var attribution: some View {
+        HStack(spacing: 3) {
+            Text("by")
+                .font(.retroCaption)
+                .foregroundStyle(.secondary)
+            Link("Vidoc Security Lab", destination: URL(string: "https://www.vidocsecurity.com/")!)
+                .font(.retroCaption)
+        }
+        .padding(.trailing, 6)
     }
 }

@@ -71,6 +71,8 @@ final class ProtectionController: ObservableObject {
 
     func disableProtection() async {
         store.setProtectionState(.stopping)
+        restartTask?.cancel()
+        restartTask = nil
         guard resolveBinary() else {
             store.proxyStatus = .stopped
             store.registryStatus = .disabled
@@ -293,8 +295,11 @@ final class ProtectionController: ObservableObject {
                 store.setProtectionState(.on)
             }
         case let .failure(error):
+            guard store.protectionState.isEnabled else {
+                store.proxyStatus = .stopped
+                return
+            }
             store.proxyStatus = .unreachable
-            guard store.protectionState.isEnabled || store.autoEnableAtLaunch else { return }
             degrade("Proxy heartbeat failed: \(error.localizedDescription)")
             if watchdog.recordFailure() {
                 scheduleWatchdogRestart()

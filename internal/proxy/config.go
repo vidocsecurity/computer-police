@@ -61,12 +61,9 @@ func DisableProject(out io.Writer, opts DisableOptions) error {
 			return err
 		}
 	}
-	managers, err := detectedSupportedManagers(opts.Global, dir)
+	managers, err := detectedRestorableManagers(opts.Global, dir)
 	if err != nil {
 		return err
-	}
-	if len(managers) == 0 {
-		return fmt.Errorf("no supported package managers detected")
 	}
 	for _, manager := range managers {
 		if err := manager.Disable(); err != nil {
@@ -133,7 +130,7 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 	pipDetected := pipAvailable()
 	pipxDetected := executableExists("pipx")
 	if global && (pipDetected || pipxDetected) {
-		path, err := userPipConfPath()
+		paths, err := userPipConfTargetPaths()
 		if err != nil {
 			return nil, err
 		}
@@ -143,12 +140,15 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 		} else if !pipDetected {
 			name = "pipx"
 		}
-		managers = append(managers, packageManagerConfig{
-			Name:    name,
-			Path:    path,
-			Enable:  func(registry string) error { return setPipConf(path, pypiSimpleRegistry(registry)) },
-			Disable: func() error { return restoreFile(path) },
-		})
+		for _, path := range paths {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    name,
+				Path:    path,
+				Enable:  func(registry string) error { return setPipConf(path, pypiSimpleRegistry(registry)) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
 	}
 	if executableExists("uv") {
 		paths := []string{filepath.Join(projectDir, "uv.toml")}
@@ -206,6 +206,92 @@ func pythonProjectConfigPaths(projectDir string) []string {
 		paths = append(paths, path)
 	}
 	return uniquePaths(paths)
+}
+
+func detectedRestorableManagers(global bool, projectDir string) ([]packageManagerConfig, error) {
+	var managers []packageManagerConfig
+	npmPaths := []string{filepath.Join(projectDir, ".npmrc")}
+	if global {
+		path, err := userNPMRCPath()
+		if err != nil {
+			return nil, err
+		}
+		npmPaths = []string{path}
+	} else {
+		npmPaths = append(npmPaths, nestedConfigPaths(projectDir, ".npmrc")...)
+	}
+	for _, path := range uniquePaths(npmPaths) {
+		path := path
+		managers = append(managers, packageManagerConfig{
+			Name:    "npm",
+			Path:    path,
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+
+	bunPaths := []string{filepath.Join(projectDir, "bunfig.toml")}
+	if global {
+		path, err := userBunfigPath()
+		if err != nil {
+			return nil, err
+		}
+		bunPaths = []string{path}
+	} else {
+		bunPaths = append(bunPaths, nestedConfigPaths(projectDir, "bunfig.toml")...)
+	}
+	for _, path := range uniquePaths(bunPaths) {
+		path := path
+		managers = append(managers, packageManagerConfig{
+			Name:    "bun",
+			Path:    path,
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+	if global {
+		pipPaths, err := userPipConfTargetPaths()
+		if err != nil {
+			return nil, err
+		}
+		for _, path := range pipPaths {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "pip/pipx",
+				Path:    path,
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
+
+	uvPaths := []string{filepath.Join(projectDir, "uv.toml")}
+	if global {
+		var err error
+		uvPaths, err = userUVConfigPaths()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		uvPaths = append(uvPaths, nestedConfigPaths(projectDir, "uv.toml")...)
+	}
+	for _, path := range uniquePaths(uvPaths) {
+		path := path
+		managers = append(managers, packageManagerConfig{
+			Name:    "uv",
+			Path:    path,
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+
+	if !global {
+		for _, path := range pythonProjectConfigPaths(projectDir) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "pyproject",
+				Path:    path,
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
+	return managers, nil
 }
 
 func nestedConfigPaths(root, name string) []string {
@@ -721,18 +807,51 @@ func userBunfigPath() (string, error) {
 }
 
 func userPipConfPath() (string, error) {
+	paths, err := userPipConfTargetPaths()
+	if err != nil {
+		return "", err
+	}
+	if len(paths) == 0 {
+		return "", fmt.Errorf("no pip config path available")
+	}
+	return paths[0], nil
+}
+
+func userPipConfTargetPaths() ([]string, error) {
+	paths, err := userPipConfPaths()
+	if err != nil {
+		return nil, err
+	}
+	var existing []string
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			existing = append(existing, path)
+		}
+	}
+	if len(existing) > 0 {
+		return existing, nil
+	}
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("no pip config path available")
+	}
+	return []string{paths[0]}, nil
+}
+
+func userPipConfPaths() ([]string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
 	name := "pip.conf"
 	if runtime.GOOS == "windows" {
 		name = "pip.ini"
 	}
+	var paths []string
 	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
-		return filepath.Join(configDir, "pip", name), nil
+		paths = append(paths, filepath.Join(configDir, "pip", name))
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".pip", name), nil
+	paths = append(paths, filepath.Join(home, ".pip", name))
+	return uniquePaths(paths), nil
 }
 
 func userUVConfigPath() (string, error) {

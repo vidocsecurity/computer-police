@@ -141,7 +141,7 @@ func Doctor(out io.Writer) error {
 		fmt.Fprintln(out, "• global bun registry configured for proxy: no")
 	}
 	pythonRegistry := pypiSimpleRegistry(registry)
-	if pipConf, err := userPipConfPath(); err == nil && projectConfigured(pipConf, pythonRegistry) {
+	if pipConfigs, err := userPipConfTargetPaths(); err == nil && anyConfigured(pipConfigs, pythonRegistry) {
 		fmt.Fprintln(out, "✓ pip.conf configured for proxy")
 	} else {
 		fmt.Fprintln(out, "• pip.conf configured for proxy: no")
@@ -228,6 +228,15 @@ func projectConfigured(name, registry string) bool {
 		return false
 	}
 	return strings.Contains(string(data), registry)
+}
+
+func anyConfigured(paths []string, registry string) bool {
+	for _, path := range paths {
+		if projectConfigured(path, registry) {
+			return true
+		}
+	}
+	return false
 }
 
 func HealthcheckURL() string {
