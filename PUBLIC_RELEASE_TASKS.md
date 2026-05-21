@@ -2,6 +2,8 @@
 
 This checklist captures work that should be finished before Computer Police is released publicly. It intentionally excludes features that already exist in the repo by default.
 
+Checked public-installer items reflect the current public installer branch. Linux installer behavior has an end-to-end smoke test; macOS and Windows installer paths are implemented in the script but still need platform-specific smoke tests before public release.
+
 ## Already implemented, do not duplicate
 
 - Local registry proxy with event ledger, health, events, stats, and advisory API endpoints.
@@ -13,17 +15,17 @@ This checklist captures work that should be finished before Computer Police is r
 
 ## P0 - Public release blockers
 
-- [ ] Build a one-command public installer entrypoint.
-- [ ] Detect OS and CPU architecture in the public installer.
-- [ ] Make the public installer choose the correct GitHub Release artifact.
-- [ ] Verify release artifact SHA-256 checksums during install.
+- [x] Build a one-command public installer entrypoint.
+- [x] Detect OS and CPU architecture in the public installer.
+- [x] Make the public installer choose the correct GitHub Release artifact.
+- [x] Verify release artifact SHA-256 checksums during install.
 - [ ] Install the signed and notarized macOS app bundle on macOS.
-- [ ] Ensure the macOS app install also provides the bundled CLI.
-- [ ] Install only the CLI on Linux.
-- [ ] Install only the CLI on Windows.
-- [ ] Fail clearly when the installer sees an unsupported platform.
-- [ ] Add a supported update path for public installs.
-- [ ] Add a supported uninstall path for public installs.
+- [x] Ensure the macOS app install also provides the bundled CLI.
+- [x] Install only the CLI on Linux.
+- [x] Install only the CLI on Windows.
+- [x] Fail clearly when the installer sees an unsupported platform.
+- [x] Add a supported update path for public installs.
+- [x] Add a supported uninstall path for public installs.
 
 - [ ] Add a first-run onboarding flow after app installation.
 - [ ] Add a first-run onboarding flow after CLI-only installation.
@@ -279,18 +281,18 @@ This checklist captures work that should be finished before Computer Police is r
 
 ## P0 - Validation and documentation
 
-- [ ] Update README with the public installer flow.
+- [x] Update README with the public installer flow.
 - [ ] Update README with supported OSes.
-- [ ] Update README with supported package managers.
+- [x] Update README with supported package managers.
 - [ ] Document the security model.
 - [ ] Document the privacy model.
-- [ ] Document the uninstall path.
-- [ ] Document the update path.
+- [x] Document the uninstall path.
+- [x] Document the update path.
 - [ ] Add public release smoke tests for macOS installer flows.
-- [ ] Add public release smoke tests for Linux installer flows.
+- [x] Add public release smoke tests for Linux installer flows.
 - [ ] Add public release smoke tests for Windows installer flows.
 - [ ] Add app and CLI version consistency checks across release artifacts.
-- [ ] Add checksum verification to the documented release process.
+- [x] Add checksum verification to the documented release process.
 - [ ] Add troubleshooting docs for proxy startup failures.
 - [ ] Add troubleshooting docs for port conflicts.
 - [ ] Add troubleshooting docs for registry config repair.
