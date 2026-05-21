@@ -80,11 +80,11 @@ curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/
 
 The installer detects the user's OS and CPU architecture, downloads the matching GitHub Release artifact, downloads the release checksum file, verifies SHA-256 before extraction, and installs:
 
-- macOS: `Computer Police.app` plus the bundled `computer-police` CLI.
+- macOS: `Computer Police.app` plus the bundled `computer-police` CLI, then launches the app so protection can auto-enable.
 - Linux: the `computer-police` CLI.
 - Windows from Git Bash/MSYS/Cygwin: the `computer-police.exe` CLI.
 
-By default the CLI is installed to `~/.computer-police/bin`. Use `--install-dir <path>` to choose another location and `--no-modify-path` to skip shell profile edits.
+By default the CLI is installed to `~/.computer-police/bin`. Use `--install-dir <path>` to choose another location, `--no-modify-path` to skip shell profile edits, and `--no-launch` to prevent automatic app launch on macOS.
 
 ## Updates and Uninstall
 
