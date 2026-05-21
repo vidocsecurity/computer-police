@@ -136,11 +136,11 @@ struct PreferencesView: View {
             BeveledPanel(style: .raised, padding: 12) {
                 VStack(alignment: .leading, spacing: 8) {
                     SectionLabel(text: "Custom Binary Path")
-                    Text("Override the bundled `package-police` binary if you keep one on PATH.")
+                    Text("Override the bundled `computer-police` binary if you keep one on PATH.")
                         .font(.retroBody)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    TextField("/usr/local/bin/package-police", text: $store.userConfiguredBinaryPath)
+                    TextField("/usr/local/bin/computer-police", text: $store.userConfiguredBinaryPath)
                         .textFieldStyle(.plain)
                         .font(.retroData)
                         .padding(6)
@@ -166,7 +166,7 @@ struct PreferencesView: View {
                         .buttonStyle(BeveledButtonStyle())
                         Spacer()
                     }
-                    Text("Installs `package-police` to ~/.local/bin so your shell can find it.")
+                    Text("Installs `computer-police` to ~/.local/bin so your shell can find it.")
                         .font(.retroCaption)
                         .foregroundStyle(.secondary)
                 }

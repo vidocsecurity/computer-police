@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"package-police/internal/paths"
+	"computer-police/internal/paths"
 )
 
 const apiVersion = "0.1.0"

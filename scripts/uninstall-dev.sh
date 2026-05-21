@@ -9,7 +9,7 @@ fi
 app_dir="${PACKAGE_POLICE_APP_DIR:-/Applications}"
 app_path="$app_dir/Computer Police.app"
 legacy_app_path="$app_dir/PackagePolice.app"
-binary="$app_path/Contents/Resources/bin/package-police"
+binary="$app_path/Contents/Resources/bin/computer-police"
 
 echo "Quitting Computer Police.app..."
 osascript -e 'quit app "Computer Police"' >/dev/null 2>&1 || true
@@ -19,6 +19,9 @@ if [[ -x "$binary" ]]; then
   echo "Restoring registry settings and stopping proxy..."
   "$binary" proxy disable >/dev/null 2>&1 || true
   "$binary" proxy stop >/dev/null 2>&1 || true
+elif command -v computer-police >/dev/null 2>&1; then
+  computer-police proxy disable >/dev/null 2>&1 || true
+  computer-police proxy stop >/dev/null 2>&1 || true
 elif command -v package-police >/dev/null 2>&1; then
   package-police proxy disable >/dev/null 2>&1 || true
   package-police proxy stop >/dev/null 2>&1 || true

@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"package-police/internal/paths"
+	"computer-police/internal/paths"
 )
 
 type Event struct {

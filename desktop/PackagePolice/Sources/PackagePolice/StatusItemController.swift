@@ -20,6 +20,8 @@ final class StatusItemController: NSObject {
     private var malwareBlinkOn = true
 
     init(store: SecurityStore, protection: ProtectionController, refresh: @escaping () -> Void) {
+        AppLog.devLog("statusItem", "Initializing status item controller")
+        AppLog.statusItem.info("Initializing status item controller")
         self.store = store
         self.protection = protection
         self.refresh = refresh
@@ -40,6 +42,8 @@ final class StatusItemController: NSObject {
     }
 
     private static func makeStatusItem(statusBar: NSStatusBar) -> NSStatusItem {
+        AppLog.devLog("statusItem", "Creating NSStatusItem")
+        AppLog.statusItem.debug("Creating NSStatusItem")
         let item = statusBar.statusItem(withLength: 30)
         item.autosaveName = "dev.computerpolice.status-item"
         item.isVisible = true
@@ -48,6 +52,8 @@ final class StatusItemController: NSObject {
     }
 
     private func configurePopover() {
+        AppLog.devLog("statusItem", "Configuring popover \(Retro.Metrics.popoverWidth)x\(Retro.Metrics.popoverHeight)")
+        AppLog.statusItem.debug("Configuring popover \(Retro.Metrics.popoverWidth, privacy: .public)x\(Retro.Metrics.popoverHeight, privacy: .public)")
         popover.behavior = .transient
         popover.contentSize = NSSize(
             width: Retro.Metrics.popoverWidth,
@@ -56,7 +62,11 @@ final class StatusItemController: NSObject {
     }
 
     private func configureButton() {
-        guard let button = statusItem.button else { return }
+        guard let button = statusItem.button else {
+            AppLog.devLog("statusItem", "Status item has no button during configureButton")
+            AppLog.statusItem.error("Status item has no button during configureButton")
+            return
+        }
         button.imagePosition = .imageOnly
         button.title = ""
         button.action = #selector(togglePopover)
@@ -164,15 +174,48 @@ final class StatusItemController: NSObject {
     }
 
     @objc private func togglePopover() {
-        guard let button = statusItem.button else { return }
+        guard let button = statusItem.button else {
+            AppLog.devLog("statusItem", "Cannot toggle popover; status item button missing")
+            AppLog.statusItem.error("Cannot toggle popover; status item button missing")
+            return
+        }
         if popover.isShown {
+            AppLog.devLog("statusItem", "Closing popover from status item click")
+            AppLog.statusItem.info("Closing popover from status item click")
             popover.performClose(nil)
         } else {
-            stopMalwareBlink()
-            refresh()
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
+            AppLog.devLog("statusItem", "Opening popover from status item click")
+            AppLog.statusItem.info("Opening popover from status item click")
+            presentPopover(from: button)
         }
+    }
+
+    /// Opens the popover from anywhere, e.g. when a user taps a notification.
+    /// Brings the app to the foreground so the popover stays anchored.
+    func showPopover() {
+        guard let button = statusItem.button else {
+            AppLog.devLog("statusItem", "Cannot show popover; status item button missing")
+            AppLog.statusItem.error("Cannot show popover; status item button missing")
+            return
+        }
+        AppLog.devLog("statusItem", "Showing popover from external request")
+        AppLog.statusItem.info("Showing popover from external request")
+        NSApp.activate(ignoringOtherApps: true)
+        if !popover.isShown {
+            presentPopover(from: button)
+        } else {
+            AppLog.devLog("statusItem", "Popover already shown")
+            AppLog.statusItem.debug("Popover already shown")
+        }
+    }
+
+    private func presentPopover(from button: NSStatusBarButton) {
+        AppLog.devLog("statusItem", "Presenting popover and refreshing state")
+        AppLog.statusItem.debug("Presenting popover and refreshing state")
+        stopMalwareBlink()
+        refresh()
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
     }
 
     private func updateIcon() {
@@ -185,6 +228,8 @@ final class StatusItemController: NSObject {
     }
 
     private func startMalwareBlink() {
+        AppLog.devLog("statusItem", "Starting malware alert badge pulse")
+        AppLog.statusItem.info("Starting malware alert badge pulse")
         malwareBlinkDeadline = Date().addingTimeInterval(15)
         malwareBlinkOn = true
         updateIcon()
@@ -211,6 +256,10 @@ final class StatusItemController: NSObject {
     }
 
     private func stopMalwareBlink() {
+        if malwareBlinkTask != nil {
+            AppLog.devLog("statusItem", "Stopping malware alert badge pulse")
+            AppLog.statusItem.debug("Stopping malware alert badge pulse")
+        }
         malwareBlinkTask?.cancel()
         malwareBlinkTask = nil
         malwareBlinkDeadline = nil
@@ -219,6 +268,8 @@ final class StatusItemController: NSObject {
     }
 
     private func recreateStatusItemForVisibilityRecovery(reason: String) {
+        AppLog.devLog("statusItem", "Recreating status item for visibility recovery: \(reason)")
+        AppLog.statusItem.warning("Recreating status item for visibility recovery: \(reason, privacy: .public)")
         NSLog("Computer Police menu bar item did not materialize (%@); recreating it", reason)
         statusItem.menu = nil
         statusBar.removeStatusItem(statusItem)

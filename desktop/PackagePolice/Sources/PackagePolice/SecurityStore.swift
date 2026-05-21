@@ -73,6 +73,12 @@ final class SecurityStore: ObservableObject {
     @Published var lastError: String?
     @Published var lastRestartAt: Date?
     @Published var lastChangedAt: Date = Date()
+    /// When set, the patrol log will auto-expand the matching row and the
+    /// hero/wanted panel can react. Cleared by views once they consume it.
+    @Published var focusedEventID: String?
+    /// When set, the WANTED panel auto-expands the matching recommendation.
+    /// Set when a notification with an advisory ID is tapped.
+    @Published var focusedAdvisoryID: String?
     @Published var notificationsEnabled: Bool {
         didSet { defaults.set(notificationsEnabled, forKey: Keys.notificationsEnabled) }
     }
@@ -103,6 +109,19 @@ final class SecurityStore: ObservableObject {
     func setProtectionState(_ state: ProtectionState) {
         protectionState = state
         lastChangedAt = Date()
+    }
+
+    func focus(eventID: String?, advisoryID: String?) {
+        focusedEventID = eventID
+        focusedAdvisoryID = advisoryID
+    }
+
+    func clearFocusedEvent(matching id: String) {
+        if focusedEventID == id { focusedEventID = nil }
+    }
+
+    func clearFocusedAdvisory(matching id: String) {
+        if focusedAdvisoryID == id { focusedAdvisoryID = nil }
     }
 }
 

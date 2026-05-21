@@ -20,7 +20,7 @@ struct DashboardView: View {
                         caught: store.digest.malwarePreventionCount,
                         blocked: store.digest.preventedCount)
                     RecommendedActionsView(store: store, protection: protection)
-                    PatrolLogView(events: store.digest.recentEvents)
+                    PatrolLogView(events: store.digest.recentEvents, store: store)
                     if diagnosticsExpanded {
                         DiagnosticsView(store: store, protection: protection)
                     }

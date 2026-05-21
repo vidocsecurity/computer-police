@@ -16,9 +16,9 @@ mkdir -p "$CLANG_MODULE_CACHE_PATH"
 
 mkdir -p "$embedded_bin_dir"
 
-echo "Building package-police CLI..."
-(cd "$repo_root" && go build -o "$embedded_bin_dir/package-police" ./cmd/package-police)
-chmod 0755 "$embedded_bin_dir/package-police"
+echo "Building computer-police CLI..."
+(cd "$repo_root" && go build -o "$embedded_bin_dir/computer-police" ./cmd/computer-police)
+chmod 0755 "$embedded_bin_dir/computer-police"
 
 echo "Building Computer Police Swift app..."
 (cd "$package_root" && swift build -c release --product "$product_name")
@@ -30,9 +30,9 @@ rm -rf "$app_path"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources/bin"
 cp "$script_dir/Info.plist.template" "$app_path/Contents/Info.plist"
 cp "$swift_exe" "$app_path/Contents/MacOS/$product_name"
-cp "$embedded_bin_dir/package-police" "$app_path/Contents/Resources/bin/package-police"
+cp "$embedded_bin_dir/computer-police" "$app_path/Contents/Resources/bin/computer-police"
 cp -R "$repo_root/internal/proxy/testdata/osv" "$app_path/Contents/Resources/osv-testdata"
-chmod 0755 "$app_path/Contents/MacOS/$product_name" "$app_path/Contents/Resources/bin/package-police"
+chmod 0755 "$app_path/Contents/MacOS/$product_name" "$app_path/Contents/Resources/bin/computer-police"
 
 for bundle in "$swift_bin_dir"/*.bundle; do
   if [[ -d "$bundle" ]]; then

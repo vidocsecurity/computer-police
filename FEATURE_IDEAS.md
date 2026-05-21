@@ -27,10 +27,10 @@ Potential capabilities:
 
 Possible product shape:
 
-- `package-police harden`: inspect the current repo and produce a hardening report.
-- `package-police harden --apply`: make low-risk mechanical changes automatically.
-- `package-police harden --policy`: generate repo policy files for agents, pre-commit, and CI.
-- `package-police harden --review-deps`: open an interactive dependency review focused on lifecycle scripts, lockfile changes, and new transitive exposure.
+- `computer-police harden`: inspect the current repo and produce a hardening report.
+- `computer-police harden --apply`: make low-risk mechanical changes automatically.
+- `computer-police harden --policy`: generate repo policy files for agents, pre-commit, and CI.
+- `computer-police harden --review-deps`: open an interactive dependency review focused on lifecycle scripts, lockfile changes, and new transitive exposure.
 
 Open questions:
 
@@ -93,10 +93,10 @@ Possible capabilities:
 
 Possible product shape:
 
-- `package-police compromise-check`: run a local-first investigation.
-- `package-police compromise-check --github`: include GitHub account and repository checks.
-- `package-police compromise-check --org`: include organization-wide repository analysis where permissions allow.
-- `package-police compromise-check --since <date>`: focus on a suspicious time window.
+- `computer-police compromise-check`: run a local-first investigation.
+- `computer-police compromise-check --github`: include GitHub account and repository checks.
+- `computer-police compromise-check --org`: include organization-wide repository analysis where permissions allow.
+- `computer-police compromise-check --since <date>`: focus on a suspicious time window.
 
 Open questions:
 
@@ -135,10 +135,10 @@ API shape to consider:
 
 Possible product shape:
 
-- `package-police check-package <name>@<version>`: check one package.
-- `package-police scan-lockfile`: check all resolved packages in a lockfile against OSV.
-- `package-police scan-ledger`: check previously observed install events against OSV.
-- `package-police watch-osv`: scheduled or cached OSV sync for newly disclosed advisories.
+- `computer-police check-package <name>@<version>`: check one package.
+- `computer-police scan-lockfile`: check all resolved packages in a lockfile against OSV.
+- `computer-police scan-ledger`: check previously observed install events against OSV.
+- `computer-police watch-osv`: scheduled or cached OSV sync for newly disclosed advisories.
 
 Open questions:
 

@@ -139,19 +139,19 @@ This checklist captures work that should be finished before Computer Police is r
 - [ ] Add app shortcuts to agent status.
 - [ ] Add per-agent trust profile metadata for common local agents.
 
-- [ ] Add `package-police harden`.
-- [ ] Make `package-police harden` inspect the current repo.
-- [ ] Make `package-police harden` produce a hardening report.
-- [ ] Add `package-police harden --apply`.
-- [ ] Make `package-police harden --apply` perform low-risk mechanical fixes.
-- [ ] Add `package-police harden --policy`.
-- [ ] Make `package-police harden --policy` generate repo policy files for agents.
-- [ ] Make `package-police harden --policy` generate pre-commit policy files.
-- [ ] Make `package-police harden --policy` generate CI policy files.
-- [ ] Add `package-police harden --review-deps`.
-- [ ] Make `package-police harden --review-deps` review lifecycle scripts.
-- [ ] Make `package-police harden --review-deps` review lockfile changes.
-- [ ] Make `package-police harden --review-deps` review new transitive dependency exposure.
+- [ ] Add `computer-police harden`.
+- [ ] Make `computer-police harden` inspect the current repo.
+- [ ] Make `computer-police harden` produce a hardening report.
+- [ ] Add `computer-police harden --apply`.
+- [ ] Make `computer-police harden --apply` perform low-risk mechanical fixes.
+- [ ] Add `computer-police harden --policy`.
+- [ ] Make `computer-police harden --policy` generate repo policy files for agents.
+- [ ] Make `computer-police harden --policy` generate pre-commit policy files.
+- [ ] Make `computer-police harden --policy` generate CI policy files.
+- [ ] Add `computer-police harden --review-deps`.
+- [ ] Make `computer-police harden --review-deps` review lifecycle scripts.
+- [ ] Make `computer-police harden --review-deps` review lockfile changes.
+- [ ] Make `computer-police harden --review-deps` review new transitive dependency exposure.
 - [ ] Identify heavy SDKs with large transitive dependency trees.
 - [ ] Identify risky SDKs with large transitive dependency trees.
 - [ ] Check whether direct external dependencies are pinned.
@@ -164,13 +164,13 @@ This checklist captures work that should be finished before Computer Police is r
 - [ ] Add scheduled GitHub checks for vulnerability-triggered dependency updates.
 - [ ] Document 2FA release requirements.
 
-- [ ] Add `package-police compromise-check`.
-- [ ] Make `package-police compromise-check` run a local-first investigation.
-- [ ] Add `package-police compromise-check --github`.
-- [ ] Make `package-police compromise-check --github` inspect connected GitHub repositories.
-- [ ] Add `package-police compromise-check --org`.
-- [ ] Make `package-police compromise-check --org` inspect organization repositories where permissions allow.
-- [ ] Add `package-police compromise-check --since <date>`.
+- [ ] Add `computer-police compromise-check`.
+- [ ] Make `computer-police compromise-check` run a local-first investigation.
+- [ ] Add `computer-police compromise-check --github`.
+- [ ] Make `computer-police compromise-check --github` inspect connected GitHub repositories.
+- [ ] Add `computer-police compromise-check --org`.
+- [ ] Make `computer-police compromise-check --org` inspect organization repositories where permissions allow.
+- [ ] Add `computer-police compromise-check --since <date>`.
 - [ ] Scan local projects for known malicious packages.
 - [ ] Scan local projects for known malicious package versions.
 - [ ] Scan local lockfiles for malicious package entries.
@@ -188,10 +188,10 @@ This checklist captures work that should be finished before Computer Police is r
 - [ ] Produce an incident-response report with potentially affected users or machines.
 - [ ] Produce an incident-response report with recommended next actions.
 
-- [ ] Add `package-police check-package <name>@<version>`.
-- [ ] Add `package-police scan-lockfile`.
-- [ ] Add `package-police scan-ledger`.
-- [ ] Add `package-police watch-osv`.
+- [ ] Add `computer-police check-package <name>@<version>`.
+- [ ] Add `computer-police scan-lockfile`.
+- [ ] Add `computer-police scan-ledger`.
+- [ ] Add `computer-police watch-osv`.
 - [ ] Support live OSV API queries in addition to cached snapshots.
 - [ ] Support OSV package URL queries.
 - [ ] Support OSV pagination with `next_page_token`.

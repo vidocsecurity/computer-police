@@ -28,18 +28,18 @@ struct BinaryResolver {
     private func bundledBinaryURL() -> URL? {
         Bundle.main.resourceURL?
             .appendingPathComponent("bin", isDirectory: true)
-            .appendingPathComponent("package-police")
+            .appendingPathComponent("computer-police")
     }
 
     private func pathCandidates() -> [String] {
         let home = fileManager.homeDirectoryForCurrentUser.path
         var candidates = [
-            "\(home)/.local/bin/package-police",
-            "/opt/homebrew/bin/package-police",
-            "/usr/local/bin/package-police",
+            "\(home)/.local/bin/computer-police",
+            "/opt/homebrew/bin/computer-police",
+            "/usr/local/bin/computer-police",
         ]
         let pathEntries = ProcessInfo.processInfo.environment["PATH"]?.split(separator: ":").map(String.init) ?? []
-        candidates.append(contentsOf: pathEntries.map { "\($0)/package-police" })
+        candidates.append(contentsOf: pathEntries.map { "\($0)/computer-police" })
         return Array(NSOrderedSet(array: candidates)) as? [String] ?? candidates
     }
 

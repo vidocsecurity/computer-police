@@ -128,14 +128,14 @@ final class ProtectionController: ObservableObject {
     func installCLIForShell() async {
         guard let bundled = Bundle.main.resourceURL?
             .appendingPathComponent("bin", isDirectory: true)
-            .appendingPathComponent("package-police")
+            .appendingPathComponent("computer-police")
         else {
             fail("Bundled CLI binary was not found.")
             return
         }
         let destinationDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/bin", isDirectory: true)
-        let destination = destinationDir.appendingPathComponent("package-police")
+        let destination = destinationDir.appendingPathComponent("computer-police")
         do {
             try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
             if FileManager.default.fileExists(atPath: destination.path) {

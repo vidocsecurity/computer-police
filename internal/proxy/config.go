@@ -331,7 +331,7 @@ func backupOriginal(path, content string, existed bool) error {
 	if existed {
 		return os.WriteFile(backup, []byte(content), 0o644)
 	}
-	return os.WriteFile(marker, []byte("created by package-police registry proxy\n"), 0o644)
+	return os.WriteFile(marker, []byte("created by Computer Police registry proxy\n"), 0o644)
 }
 
 func restoreFile(path string) error {

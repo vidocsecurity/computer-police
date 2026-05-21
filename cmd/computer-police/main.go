@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"package-police/internal/proxy"
+	"computer-police/internal/proxy"
 )
 
 const version = "0.1.0"
@@ -109,15 +109,15 @@ func printHelp() {
 	fmt.Println(`Computer Police Local Registry Proxy
 
 Usage:
-  package-police install [--project]
-  package-police uninstall [--project]
-  package-police doctor
-  package-police ledger list [--limit N]
-  package-police proxy start [--host 127.0.0.1] [--port 4873]
-  package-police proxy enable [--project]
-  package-police proxy disable [--project]
-  package-police proxy doctor
-  package-police proxy events [--limit N]
+  computer-police install [--project]
+  computer-police uninstall [--project]
+  computer-police doctor
+  computer-police ledger list [--limit N]
+  computer-police proxy start [--host 127.0.0.1] [--port 4873]
+  computer-police proxy enable [--project]
+  computer-police proxy disable [--project]
+  computer-police proxy doctor
+  computer-police proxy events [--limit N]
 
 Local-only MVP: routes npm-compatible registry traffic through a local pass-through proxy and records request metadata.
 

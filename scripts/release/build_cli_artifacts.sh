@@ -38,7 +38,7 @@ for target in "${targets[@]}"; do
       -trimpath \
       -ldflags "-s -w -X main.version=$version" \
       -o "$binary" \
-      ./cmd/package-police
+      ./cmd/computer-police
   )
 
   archive_base="ComputerPoliceCLI-$version-$label"

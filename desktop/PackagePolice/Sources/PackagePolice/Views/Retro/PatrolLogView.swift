@@ -2,12 +2,15 @@ import PackagePoliceCore
 import SwiftUI
 
 /// Replaces `RecentEventsView`. Zebra-striped log with grouped time buckets,
-/// ecosystem badges, and a single accent column for status. HTTP status is
-/// hidden by default; users can hover to reveal a tooltip.
+/// ecosystem badges, and a single accent column for status. Each row is
+/// clickable; click expands an inline detail panel with the package, manager,
+/// time, advisory metadata, and copy/open affordances.
 struct PatrolLogView: View {
     let events: [DigestEvent]
+    @ObservedObject var store: SecurityStore
 
     @Environment(\.retro) private var palette
+    @State private var expandedID: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -28,7 +31,7 @@ struct PatrolLogView: View {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
                             groupHeader(group.title)
-                            ForEach(Array(group.events.enumerated()), id: \.offset) { idx, event in
+                            ForEach(Array(group.events.enumerated()), id: \.element.id) { idx, event in
                                 eventRow(event, alt: idx.isMultiple(of: 2))
                             }
                         }
@@ -36,6 +39,8 @@ struct PatrolLogView: View {
                 }
             }
         }
+        .onAppear { syncFocusedEvent() }
+        .onChange(of: store.focusedEventID) { _, _ in syncFocusedEvent() }
     }
 
     private var emptyState: some View {
@@ -75,28 +80,79 @@ struct PatrolLogView: View {
             alignment: .bottom)
     }
 
+    @ViewBuilder
     private func eventRow(_ event: DigestEvent, alt: Bool) -> some View {
-        HStack(spacing: 8) {
-            Text(timeString(event))
-                .font(.retroCaption)
-                .foregroundStyle(palette.textSecondary)
-                .frame(width: 38, alignment: .leading)
-            EcosystemBadge(manager: event.manager)
-            Text(event.coordinate)
-                .font(.retroCaption)
-                .foregroundStyle(palette.textPrimary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer(minLength: 6)
-            Text(statusText(for: event))
-                .font(.retroLabel)
-                .tracking(0.5)
-                .foregroundStyle(statusColor(for: event))
+        let expanded = expandedID == event.id
+        VStack(spacing: 0) {
+            Button {
+                toggle(eventID: event.id)
+            } label: {
+                HStack(spacing: 8) {
+                    Text(timeString(event))
+                        .font(.retroCaption)
+                        .foregroundStyle(palette.textSecondary)
+                        .frame(width: 38, alignment: .leading)
+                    EcosystemBadge(manager: event.manager)
+                    Text(event.coordinate)
+                        .font(.retroCaption)
+                        .foregroundStyle(palette.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 6)
+                    Text(statusText(for: event))
+                        .font(.retroLabel)
+                        .tracking(0.5)
+                        .foregroundStyle(statusColor(for: event))
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(palette.textTertiary)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(rowBackground(alt: alt, expanded: expanded))
+            .help(tooltip(for: event))
+
+            if expanded {
+                AdvisoryDetailPanel(
+                    coordinate: event.coordinate,
+                    advisoryID: event.blockedBy ?? event.blocklistEntry?.advisoryID,
+                    severity: severity(for: event),
+                    summary: summary(for: event),
+                    recommendation: recommendation(for: event),
+                    manager: event.manager,
+                    timestamp: event.event.date,
+                    outcome: outcome(for: event))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
+                    .transition(.opacity)
+            }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(alt ? palette.stripeAlt : Color.clear)
-        .help(tooltip(for: event))
+    }
+
+    private func toggle(eventID: String) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            expandedID = (expandedID == eventID) ? nil : eventID
+        }
+        store.clearFocusedEvent(matching: eventID)
+    }
+
+    private func syncFocusedEvent() {
+        guard let target = store.focusedEventID else { return }
+        if events.contains(where: { $0.id == target }) {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                expandedID = target
+            }
+            store.clearFocusedEvent(matching: target)
+        }
+    }
+
+    private func rowBackground(alt: Bool, expanded: Bool) -> Color {
+        if expanded { return palette.accent.opacity(0.08) }
+        return alt ? palette.stripeAlt : Color.clear
     }
 
     private func timeString(_ event: DigestEvent) -> String {
@@ -126,6 +182,38 @@ struct PatrolLogView: View {
             return "\(event.manager) · blocked by \(blockedBy) · HTTP \(event.statusCode)"
         }
         return "\(event.manager) · \(event.requestType) · HTTP \(event.statusCode)"
+    }
+
+    private func outcome(for event: DigestEvent) -> AdvisoryDetailPanel.Outcome {
+        if event.isMalwarePrevented { return .caught }
+        if event.isVulnerable { return .review }
+        return .observed
+    }
+
+    private func severity(for event: DigestEvent) -> String? {
+        if let entry = event.blocklistEntry { return entry.severity }
+        if event.isMalwarePrevented { return "critical" }
+        return nil
+    }
+
+    private func summary(for event: DigestEvent) -> String? {
+        if let entry = event.blocklistEntry, !entry.summary.isEmpty {
+            return entry.summary
+        }
+        if let reason = event.blockReason, !reason.isEmpty {
+            return reason
+        }
+        return nil
+    }
+
+    private func recommendation(for event: DigestEvent) -> String? {
+        if let entry = event.blocklistEntry, !entry.recommendation.isEmpty {
+            return entry.recommendation
+        }
+        if event.isMalwarePrevented {
+            return "Do not install this version. Rebuild from a trusted lockfile after choosing a safe release."
+        }
+        return nil
     }
 
     private var grouped: [(title: String, events: [DigestEvent])] {

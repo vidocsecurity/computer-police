@@ -71,7 +71,7 @@ jobs:
         run: |
           ext=""
           if [[ "${{ runner.os }}" == "Windows" ]]; then ext=".exe"; fi
-          go build -o "computer-police${ext}" ./cmd/package-police
+          go build -o "computer-police${ext}" ./cmd/computer-police
 
       - name: Run proxy e2e tests
         env:

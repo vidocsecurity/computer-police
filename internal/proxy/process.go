@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"package-police/internal/paths"
+	"computer-police/internal/paths"
 )
 
 type Status struct {
@@ -142,7 +142,7 @@ func Doctor(out io.Writer) error {
 	}
 	events, err := readLastEvents(5)
 	if err == nil && len(events) > 0 {
-		fmt.Fprintf(out, "✓ recent proxy events: %d shown by `package-police proxy events`\n", len(events))
+		fmt.Fprintf(out, "✓ recent proxy events: %d shown by `computer-police proxy events`\n", len(events))
 	} else {
 		fmt.Fprintln(out, "• recent proxy events: none")
 	}
