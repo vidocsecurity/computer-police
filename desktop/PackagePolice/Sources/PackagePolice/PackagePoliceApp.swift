@@ -41,7 +41,7 @@ struct PackagePoliceApp: App {
 
         Settings {
             PreferencesView(store: store, protection: protection, refreshLoop: refreshLoop)
-                .frame(width: 520, height: 420)
+                .frame(minWidth: 540, minHeight: 380)
         }
     }
 }

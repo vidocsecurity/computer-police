@@ -4,36 +4,61 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var store: SecurityStore
     @ObservedObject var protection: ProtectionController
-    @State private var diagnosticsPresented = false
+    @State private var diagnosticsExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ProtectionToggleView(store: store, protection: protection)
-            StatusLightView(store: store)
+        VStack(alignment: .leading, spacing: 0) {
+            TitleStrip(subtitle: titleSubtitle)
 
-            HStack(spacing: 10) {
-                StatCardView(title: "Installs this week", value: "\(store.digest.installsThisWeek)", color: .blue)
-                StatCardView(title: "Malware prevention", value: "\(store.digest.malwarePreventionCount)", color: store.digest.malwarePreventionCount > 0 ? .red : .green)
-                StatCardView(title: "Blocked requests", value: "\(store.digest.preventedCount)", color: .purple)
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HeroPanel(store: store, protection: protection)
+                    CaughtPosterView(store: store)
+                    StatusPillView(store: store)
+                    StatStripView(
+                        installs: store.digest.installsThisWeek,
+                        caught: store.digest.malwarePreventionCount,
+                        blocked: store.digest.preventedCount)
+                    RecommendedActionsView(store: store, protection: protection)
+                    PatrolLogView(events: store.digest.recentEvents)
+                    if diagnosticsExpanded {
+                        DiagnosticsView(store: store, protection: protection)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
             }
 
-            RecommendedActionsView(store: store, protection: protection)
-            RecentEventsView(events: store.digest.recentEvents)
+            Divider().background(.black.opacity(0.2))
 
-            Divider()
-            HStack {
-                Button("Diagnostics...") { diagnosticsPresented.toggle() }
-                Button("Preferences...") { NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) }
+            HStack(spacing: 4) {
+                Button(diagnosticsExpanded ? "Close case file" : "Open case file") {
+                    withAnimation(.easeInOut(duration: 0.18)) { diagnosticsExpanded.toggle() }
+                }
+                .buttonStyle(BracketButtonStyle())
+                Button("Department…") {
+                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                }
+                .buttonStyle(BracketButtonStyle())
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
+                    .buttonStyle(BracketButtonStyle())
             }
-            .buttonStyle(.borderless)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
         }
-        .padding(18)
-        .frame(width: 420)
-        .sheet(isPresented: $diagnosticsPresented) {
-            DiagnosticsView(store: store, protection: protection)
-                .frame(width: 460, height: 360)
+        .frame(width: Retro.Metrics.popoverWidth, height: Retro.Metrics.popoverHeight)
+        .retroSurface()
+    }
+
+    private var titleSubtitle: String {
+        switch store.protectionState {
+        case .on: return "Patrol"
+        case .off: return "Off duty"
+        case .starting: return "Booting"
+        case .stopping: return "Stand down"
+        case .degraded: return "Backup needed"
+        case .failed: return "Down"
         }
     }
 }
