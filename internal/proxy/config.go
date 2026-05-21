@@ -145,12 +145,11 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 	if executableExists("uv") {
 		paths := []string{filepath.Join(projectDir, "uv.toml")}
 		if global {
-			var err error
-			path, err := userUVConfigPath()
+			uvPaths, err := userUVConfigPaths()
 			if err != nil {
 				return nil, err
 			}
-			paths = []string{path}
+			paths = uvPaths
 		} else {
 			paths = append(paths, nestedConfigPaths(projectDir, "uv.toml")...)
 		}
@@ -737,12 +736,31 @@ func userPipConfPath() (string, error) {
 }
 
 func userUVConfigPath() (string, error) {
-	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
-		return filepath.Join(configDir, "uv", "uv.toml"), nil
-	}
-	home, err := os.UserHomeDir()
+	paths, err := userUVConfigPaths()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "uv", "uv.toml"), nil
+	if len(paths) == 0 {
+		return "", fmt.Errorf("no uv config path available")
+	}
+	return paths[0], nil
+}
+
+func userUVConfigPaths() ([]string, error) {
+	var paths []string
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		paths = append(paths, filepath.Join(xdg, "uv", "uv.toml"))
+	}
+	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
+		paths = append(paths, filepath.Join(configDir, "uv", "uv.toml"))
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		if len(paths) > 0 {
+			return uniquePaths(paths), nil
+		}
+		return nil, err
+	}
+	paths = append(paths, filepath.Join(home, ".config", "uv", "uv.toml"))
+	return uniquePaths(paths), nil
 }
