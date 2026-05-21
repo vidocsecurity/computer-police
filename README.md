@@ -39,7 +39,7 @@ curl -fsSL https://computer.police.dev/install | bash
 Pin a version:
 
 ```bash
-curl -fsSL https://computer.police.dev/install | bash -s -- --version v0.1.0
+curl -fsSL https://computer.police.dev/install | bash -s -- --version v0.1.5
 ```
 
 Update or remove:
