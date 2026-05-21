@@ -2,6 +2,8 @@
 
 <p align="center"><strong>Blocks known-malicious package installs before they touch your disk.</strong></p>
 
+<p align="center">by <a href="https://www.vidocsecurity.com/">Vidoc Security</a></p>
+
 <p align="center">
   <a href="https://github.com/vidocsecurity/computer-police/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/vidocsecurity/computer-police?style=flat-square&color=0a0a0c" /></a>
   <a href="https://github.com/vidocsecurity/computer-police/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/vidocsecurity/computer-police/ci.yml?style=flat-square&branch=main&label=ci" /></a>
@@ -18,15 +20,11 @@
 
 ---
 
-Computer Police protects developers and coding agents from installing known-malicious packages.
+Computer Police protects developers, CI, and coding agents from installing confirmed-malicious packages.
 
-It exists because modern development environments run package installs automatically: AI agents, CI jobs, devcontainers, remote sandboxes, and local scripts all call `npm install`, `pip install`, `uv add`, and similar commands on your behalf. If one of those commands pulls a package version that has been confirmed as malware, the damage happens before you ever review the diff.
+It runs a local registry proxy on `127.0.0.1`, points supported package managers at it, and blocks package versions listed in public [OSV](https://osv.dev) `MAL-*` malware advisories. Everything else passes through.
 
-Computer Police adds one narrow safety layer: it runs a local registry proxy on `127.0.0.1`, points supported package managers at it, and blocks package versions that match public [OSV](https://osv.dev) `MAL-*` malware advisories. Everything else passes through.
-
-It is intentionally low-noise. It is not a vulnerability scanner, license scanner, static analyzer, or "suspicious package" heuristic. If Computer Police blocks an install, the package version is already listed as malware by a public advisory source.
-
-It is designed not to take over your system. It does not need root, does not install a kernel extension, does not modify package binaries, and does not use a system-wide proxy. It only changes package-manager registry config so installs go through `http://127.0.0.1:4873/`, and `computer-police uninstall` restores the config it changed.
+It is deliberately narrow: not a vulnerability scanner, not a license scanner, not a static analyzer, and not a "this package looks suspicious" heuristic. If Computer Police blocks an install, the package version is already listed as malware by a public advisory source.
 
 ## Install
 
@@ -38,38 +36,26 @@ One-liner for macOS, Linux, and Windows via WSL or Git Bash:
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
 ```
 
-The installer detects your OS and architecture, downloads the matching GitHub Release artifact, verifies its SHA-256 checksum, and installs the CLI to `~/.computer-police/bin/computer-police`. On macOS it also installs `Computer Police.app` to `/Applications`.
-
-Pin a specific version:
+Pin a version:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --version v0.1.0
 ```
 
-Update or uninstall later:
+Update or remove:
 
 ```bash
 computer-police self update
 computer-police self uninstall
 ```
 
-Both go through the same signed installer script, with the same checksum verification.
+The installer detects your OS and CPU, downloads the matching GitHub Release artifact, verifies SHA-256 checksums, and installs the CLI to `~/.computer-police/bin/computer-police`. On macOS it also installs `Computer Police.app` to `/Applications`.
 
 ### What changes on my machine?
 
-When you run `computer-police install`, it:
+`computer-police install` starts a local proxy on `127.0.0.1:4873`, configures supported package managers to use it, stores a local ledger under `~/.computer-police/`, and refreshes the public OSV malware advisory snapshot.
 
-- starts a local proxy on `127.0.0.1:4873`;
-- configures supported package managers to use that proxy;
-- stores a local install ledger under `~/.computer-police/`;
-- downloads and refreshes the public OSV malicious-package advisory snapshot.
-
-It does **not**:
-
-- require `sudo`;
-- install a browser extension, kernel extension, launch daemon, or system proxy;
-- upload package names, lockfiles, install history, or project data;
-- change your dependencies, lockfiles, package-manager binaries, or source code.
+It does **not** require `sudo`, install a kernel extension, use a system proxy, upload package names or lockfiles, change your dependencies, or add meaningful install-time overhead. Allowed packages pass through after a fast local advisory lookup.
 
 To undo it:
 
@@ -80,91 +66,42 @@ computer-police self uninstall
 
 ## Quickstart
 
-Sixty seconds to your first block.
-
 ```bash
-# 1. Start protection (also rewrites your npm/bun/pip config to use the proxy).
 computer-police install
-
-# 2. Confirm everything looks right.
 computer-police doctor
-
-# 3. Try to install a known-malicious package. You should see HTTP 403.
 npm install some-known-malicious-package@1.2.3
-
-# 4. Look at the local event ledger.
 computer-police ledger list --limit 20
 ```
 
-When you're done, `computer-police uninstall` stops the proxy and restores every package-manager config file it changed.
+`computer-police uninstall` stops the proxy and restores package-manager config.
 
 ## Design goals
 
-These are the rules we hold ourselves to. Each of them is a deliberate constraint, not an aspiration.
-
-- **Low noise by design.** Computer Police blocks installs of *confirmed* malware only — packages with a public OSV `MAL-*` advisory. It is **not** a vulnerability scanner, **not** a CVE tracker, **not** a license checker, and **not** a heuristic "this package looks suspicious" tool. If it blocks, somebody has confirmed the package is malicious. Zero-day and vulnerability detection are out of scope today, and if we ever add them they will live in a separate, clearly-labelled layer so the malware signal stays clean.
-- **Designed for agents.** Any package manager an agent invokes — `npm`, `pnpm`, `yarn`, `bun`, `pip`, `uv`, `poetry`, `pdm`, `pipx` — is protected automatically as soon as Computer Police is installed. No agent-specific plugin required.
-- **Works anywhere a package manager runs.** Laptops, CI/CD pipelines, ephemeral devcontainers, remote agent sandboxes. One binary, one loopback listener.
-- **Local-first and private by design.** Your install events, package names, and lockfiles never leave your machine. The only outbound network call is fetching the public OSV advisory snapshot.
-- **No elevated privileges.** No `sudo`, no kernel hooks, no system proxy. Just a loopback HTTP listener and reversible edits to your package-manager config.
-- **Open source and auditable.** Every blocking decision, every advisory source, and every config change is in this repository.
+- **Low noise.** Block confirmed malware only. CVEs, licenses, heuristics, and zero-days are out of scope today.
+- **Agent-ready.** Protect Claude Code, Codex, OpenCode, Cursor, and custom harnesses at the package-manager layer.
+- **Local-first.** No telemetry, no remote logging, no package names leaving your machine.
+- **Reversible.** No root, no kernel hooks, no system proxy. Config changes can be undone.
+- **Fast path for safe installs.** Allowed packages pass through the local proxy after a quick advisory check.
 
 Computer Police is not trying to replace Snyk, Dependabot, `npm audit`, Socket, Phylum, or a full supply-chain security platform. It does one thing at install time: block package versions already confirmed as malware.
 
 ## How it works
 
 ```
-  ┌──────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
-  │ npm / pnpm   │     │ Computer Police      │     │ npm registry         │
-  │ yarn / bun   │ ──▶ │ 127.0.0.1:4873       │ ──▶ │ pypi.org             │
-  │ pip / uv ... │     │ (local proxy)        │     │ (upstream registries)│
-  └──────────────┘     └──────────┬───────────┘     └──────────────────────┘
-                                  │
-                                  ▼
-                         block if version matches
-                         OSV MAL-* advisory
-                                  │
-                                  ▼
-                         append event to local
-                         NDJSON ledger
+npm / pip / uv / bun
+        │
+        ▼
+Computer Police on 127.0.0.1:4873
+        │
+        ├─ block if version matches OSV MAL-* advisory
+        └─ otherwise pass through to npm / PyPI
 ```
 
-1. `computer-police install` starts the local proxy and points your package managers at `http://127.0.0.1:4873/`.
-2. Every install request is matched against a cached snapshot of OSV malicious-package advisories.
-3. Known-bad versions are blocked with an HTTP `403` before any code is downloaded.
-4. The result of every request is recorded to a local NDJSON ledger so you can audit what happened.
+The local advisory cache refreshes every 10 minutes. Install events are written to `~/.computer-police/registry-proxy/events.ndjson`.
 
-The malware advisory cache is refreshed in the background from the public OSV snapshot every 10 minutes. Set `COMPUTER_POLICE_OSV_ADVISORY_DIR` to point at a directory of OSV-format JSON for offline use, air-gapped environments, or testing.
-
-## Trust model
-
-|     | Computer Police does | Computer Police does not |
-| --- | --- | --- |
-| 1 | Run entirely on your machine | Send install events, package names, or lockfiles anywhere |
-| 2 | Block known-malicious package versions before they download | Require `sudo`, kernel extensions, or a system-wide proxy |
-| 3 | Refresh malware advisories from the public OSV snapshot | Phone home, collect analytics, or contact any private endpoint |
-| 4 | Edit `npmrc`, `bunfig`, and `pip.conf` to route through `127.0.0.1` | Modify package binaries, lockfiles, or installed packages |
-| 5 | Verify SHA-256 checksums of its own release artifacts on install | Auto-update itself without your consent |
-
-## First-party support for coding agents
-
-Because Computer Police works at the package-manager layer, *any* agent that runs `npm install`, `pip install`, `uv add`, or any other supported package manager is protected the moment you run `computer-police install`. There is nothing to configure per-agent and no plugin to maintain.
-
-That includes:
-
-- **Claude Code**
-- **OpenAI Codex CLI**
-- **OpenCode**
-- **Cursor agent**
-- **Custom harnesses** (any subprocess that uses a supported package manager)
-
-We are also building per-agent auto-detection so that fresh installations of these harnesses get a one-click "protect this agent" step in onboarding. Track progress in [`PUBLIC_RELEASE_TASKS.md`](PUBLIC_RELEASE_TASKS.md).
-
-## CI/CD and sandboxes
+## Agents, CI, and sandboxes
 
 Computer Police is designed to work the same way in a CI runner, a devcontainer, or a remote agent VM as it does on your laptop.
-
-GitHub Actions:
 
 ```yaml
 - name: Install Computer Police
@@ -177,89 +114,21 @@ GitHub Actions:
 
 - name: Install dependencies (now behind Computer Police)
   run: npm ci
-
-- name: Export install ledger
-  if: always()
-  run: computer-police ledger list --limit 1000 > computer-police-ledger.json
 ```
 
-Dockerfile for an agent sandbox image:
-
-```dockerfile
-RUN curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh \
-      | bash \
- && /root/.computer-police/bin/computer-police install
-ENV PATH="/root/.computer-police/bin:${PATH}"
-```
-
-The ledger file is plain NDJSON — one JSON object per install request — and is safe to attach to a build artifact for later audit.
+Because protection happens at the package-manager layer, agents do not need plugins. Any supported package manager invoked by Claude Code, Codex, OpenCode, Cursor, or a custom harness goes through the same check.
 
 ## Package manager coverage
 
-Status legend: **Supported** — proxy blocking is implemented and covered by end-to-end tests · **Partial** — related support exists, but important install paths are still missing · **Planned** — not implemented yet.
-
-| Priority | Ecosystem | Package managers | Registry | Status |
-| --- | --- | --- | --- | --- |
-| P0 | JavaScript / TypeScript / Node | `npm`, `yarn`, `pnpm`, `bun` | npm registry | **Supported** |
-| P0 | Python / PyPI | `pip`, `uv`, `poetry`, `pdm`, `pipx` | PyPI | **Supported** |
-| P1 | Python / Conda | `conda`, `mamba`, `micromamba`, `pixi` | conda-forge, Anaconda | Planned |
-| P1 | Ruby | `gem`, `bundler` | RubyGems | Planned |
-| P1 | PHP | `composer` | Packagist | Planned |
-| P1 | Rust | `cargo` | crates.io | Planned |
-| P1 | Go | `go mod`, `go install` | Go module proxy | Planned |
-| P1 | JVM | `maven`, `gradle` | Maven Central, Google Maven | Planned |
-| P1 | .NET | `nuget`, `dotnet restore` | NuGet | Planned |
-
-<details>
-<summary>P2 and P3 ecosystems (planned)</summary>
-
-| Priority | Ecosystem | Package managers | Registry | Next work |
-| --- | --- | --- | --- | --- |
-| P2 | Scala | `sbt`, `coursier`, `mill` | Maven repos, Ivy, Coursier cache | Reuse Maven proxy, add Coursier/sbt config coverage. |
-| P2 | Clojure | Clojure CLI, `leiningen`, `boot` | Maven Central, Clojars | Reuse Maven proxy, add Clojars config coverage. |
-| P2 | Dart / Flutter | `dart pub`, `flutter pub` | pub.dev | Add pub.dev hosted package metadata/download proxying. |
-| P2 | Swift | Swift Package Manager | Git URLs, Swift package registries | Support Swift package registry flows; evaluate Git dependency blocking. |
-| P2 | iOS / macOS legacy | `cocoapods`, `carthage` | CocoaPods Specs, Git | Add CocoaPods specs/source; evaluate Git-aware blocking for Carthage. |
-| P2 | R | `install.packages`, `renv`, `pak` | CRAN, Bioconductor, RSPM | Add CRAN-like repository proxying and R repo config support. |
-| P2 | Julia | `Pkg` | General registry, Julia package servers | Add Julia package server/registry proxying. |
-| P3 | Elixir / Erlang | `mix`, `rebar3` | Hex.pm | Add Hex metadata/download proxying. |
-| P3 | Haskell | `cabal`, `stack` | Hackage, Stackage | Add Hackage/Stackage metadata and tarball proxying. |
-| P3 | OCaml | `opam` | opam repository | Add opam repository metadata/archive proxying. |
-| P3 | Perl | `cpan`, `cpanm`, `Carton`, `Carmel` | CPAN | Add CPAN mirror/proxy support. |
-| P3 | Lua | `luarocks` | LuaRocks | Add LuaRocks manifest and rock download proxying. |
-| P3 | C / C++ | `conan`, `vcpkg` | ConanCenter, vcpkg, Git | Add Conan first; vcpkg likely needs Git-aware support. |
-| P3 | D | `dub` | DUB registry | Add DUB registry proxying. |
-| P3 | Nim | `nimble` | Nim package directory, Git | Add Nimble package index and Git-aware handling. |
-| P3 | Zig | Zig package manager | URLs, Git, custom sources | Add URL/archive blocking once Zig conventions stabilize. |
-
-</details>
-
-## Privacy and data
-
-- **Outbound network calls.** The only network endpoint Computer Police contacts on its own is the public OSV malicious-package advisory snapshot, used to refresh the local malware cache. There is no analytics, no telemetry, no remote logging.
-- **Local state.** All Computer Police state lives under `~/.computer-police/`:
-  - `registry-proxy/events.ndjson` — install ledger (one JSON object per request).
-  - `registry-proxy/malware-advisories.json` — cached OSV advisory snapshot.
-  - `bin/computer-police` — the CLI binary.
-- **No background scanning.** Computer Police does not crawl your filesystem. It only sees package install requests you (or your agents) initiate while protection is enabled.
-- **Reversible.** `computer-police uninstall` stops the proxy and restores every package-manager config file it ever changed. `computer-police self uninstall` removes the binary and on-disk state.
-
-## Security model
-
-**In scope.** Blocking installation of public package versions that are listed as malicious by OSV (`MAL-*` advisories) for the package managers and ecosystems marked **Supported** above.
-
-**Out of scope (today).** Vulnerable-but-not-malicious dependencies (this is a malware tool, not a vulnerability scanner), runtime sandboxing of installed code, network egress filtering, post-install lifecycle-script analysis, and source-code analysis. Several of these are on the roadmap as the `harden` and `compromise-check` subcommands — see [`FEATURE_IDEAS.md`](FEATURE_IDEAS.md).
-
-**Defense in depth.** Computer Police is a strong, focused layer. It does not replace pinning, lockfiles, code review, signed releases, or organizational policy. It complements them.
+| Status | Ecosystem | Package managers |
+| --- | --- | --- |
+| Supported | JavaScript / TypeScript | `npm`, `yarn`, `pnpm`, `bun` |
+| Supported | Python / PyPI | `pip`, `uv`, `poetry`, `pdm`, `pipx` |
+| Planned | Conda, Ruby, PHP, Rust, Go, JVM, .NET | See [`PUBLIC_RELEASE_TASKS.md`](PUBLIC_RELEASE_TASKS.md) |
 
 ## Our own supply chain
 
-Because Computer Police is a supply-chain security tool, we hold ourselves to the same bar:
-
-- **Zero external Go dependencies.** The CLI is built from the Go standard library only. Check `go.mod`.
-- **Reproducible release builds.** Cross-platform CLI archives and macOS app bundles are produced by GitHub Actions from tagged commits.
-- **SHA-256 verified install.** The public installer downloads release artifacts and verifies their checksums before extracting anything.
-- **Signed macOS updates.** Sparkle-signed appcast updates are coming with Developer-ID signing and notarization (see [`PUBLIC_RELEASE_TASKS.md`](PUBLIC_RELEASE_TASKS.md)).
+The CLI has zero external Go dependencies. Release artifacts are built by GitHub Actions, and the public installer verifies SHA-256 checksums before extraction.
 
 ## CLI reference
 
@@ -277,7 +146,7 @@ computer-police self update [--version vX.Y.Z]
 computer-police self uninstall
 ```
 
-When the proxy is running, three read-only JSON endpoints are exposed on the same loopback listener for the macOS app and for scripting:
+Read-only local API endpoints:
 
 - `GET /api/health`
 - `GET /api/events?limit=50`
@@ -286,15 +155,7 @@ When the proxy is running, three read-only JSON endpoints are exposed on the sam
 
 ## macOS app
 
-The macOS menu-bar app lives in [`desktop/ComputerPolice/`](desktop/ComputerPolice/). It is a thin control surface over the same proxy: toggle protection on and off, see Binary / Proxy / Registry status lights, watch recent install events, and repair package-manager config if something else has touched it.
-
-Build and run locally:
-
-```bash
-./scripts/dev.sh
-```
-
-See [`desktop/ComputerPolice/README.md`](desktop/ComputerPolice/README.md) for the full click-through checklist.
+The macOS menu-bar app is a control surface for the same proxy: toggle protection, view recent events, and repair package-manager config. See [`desktop/ComputerPolice/README.md`](desktop/ComputerPolice/README.md).
 
 ## Build from source
 
@@ -306,44 +167,11 @@ go test ./...
 go vet ./...
 ```
 
-To run the proxy against bundled OSV test fixtures (no large download):
+For development conventions and CI rules, see [`AGENTS.md`](AGENTS.md).
 
-```bash
-export COMPUTER_POLICE_OSV_ADVISORY_DIR=./internal/proxy/testdata/osv
-./computer-police proxy start
-```
+## Links
 
-For development conventions, environment setup, and CI rules see [`AGENTS.md`](AGENTS.md).
-
-## Roadmap
-
-The big bets, all open and tracked in this repo:
-
-- **Onboarding compromise check.** "Have I already been hit?" — a one-time scan of your lockfiles, install history, and ledger against the OSV malicious-package corpus.
-- **`computer-police harden`.** Repo hardening: pin direct deps, restrict lifecycle scripts, block lockfile drift in pre-commit, generate agent and CI policy files.
-- **Broader ecosystem coverage.** Conda family next, then Ruby / PHP / Rust / Go / JVM / .NET. See the coverage table above.
-- **First-party agent onboarding.** Per-agent auto-detection for Claude Code, Codex, OpenCode, Cursor, and custom harnesses.
-
-Full breakdown in [`PUBLIC_RELEASE_TASKS.md`](PUBLIC_RELEASE_TASKS.md) and [`FEATURE_IDEAS.md`](FEATURE_IDEAS.md).
-
-## Security disclosures
-
-Please do **not** open a public GitHub issue for security vulnerabilities. Instead:
-
-- Use [GitHub Security Advisories](https://github.com/vidocsecurity/computer-police/security/advisories/new), or
-- Email [security@vidocsecurity.com](mailto:security@vidocsecurity.com).
-
-We will acknowledge within two business days.
-
-## Contributing
-
-Computer Police is open source and contributions are welcome. Start with [`AGENTS.md`](AGENTS.md) for build/test instructions and [`PUBLIC_RELEASE_TASKS.md`](PUBLIC_RELEASE_TASKS.md) for the current task list. Issues and PRs are the right place for bugs, missing ecosystems, and feature requests.
-
-## Credits
-
-- Malicious-package advisories from [OSV.dev](https://osv.dev). Computer Police would not exist without their open vulnerability database.
-- macOS menu-bar UX inspired by [CodexBar](https://github.com/steipete/CodexBar).
-
-## License
-
-MIT. See [`LICENSE`](LICENSE).
+- Roadmap: [`PUBLIC_RELEASE_TASKS.md`](PUBLIC_RELEASE_TASKS.md), [`FEATURE_IDEAS.md`](FEATURE_IDEAS.md)
+- Security reports: [GitHub Security Advisories](https://github.com/vidocsecurity/computer-police/security/advisories/new) or [security@vidocsecurity.com](mailto:security@vidocsecurity.com)
+- License: [`MIT`](LICENSE)
+- Advisory data: [OSV.dev](https://osv.dev)
