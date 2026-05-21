@@ -106,7 +106,7 @@ func runLedger(args []string) error {
 }
 
 func printHelp() {
-	fmt.Println(`Package Police Local Registry Proxy
+	fmt.Println(`Computer Police Local Registry Proxy
 
 Usage:
   package-police install [--project]

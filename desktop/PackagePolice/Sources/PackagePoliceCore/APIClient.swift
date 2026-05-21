@@ -7,7 +7,7 @@ public final class APIClient: @unchecked Sendable {
         public var errorDescription: String? {
             switch self {
             case let .badStatus(status):
-                return "Package Police API returned HTTP \(status)"
+                return "Computer Police API returned HTTP \(status)"
             }
         }
     }

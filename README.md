@@ -1,6 +1,6 @@
-# Package Police
+# Computer Police
 
-Package Police is a local npm-compatible registry proxy plus a macOS menu-bar frontend.
+Computer Police is a local npm-compatible registry proxy plus a macOS menu-bar frontend.
 
 The proxy records local package install traffic in `~/.package-police/registry-proxy/events.ndjson`, blocks npm package versions that match current-year OSV `MAL-*` advisories, and exposes read-only JSON endpoints on the same loopback listener:
 

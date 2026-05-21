@@ -41,7 +41,7 @@ final class StatusItemController: NSObject {
 
     private static func makeStatusItem(statusBar: NSStatusBar) -> NSStatusItem {
         let item = statusBar.statusItem(withLength: 30)
-        item.autosaveName = "dev.packagepolice.status-item"
+        item.autosaveName = "dev.computerpolice.status-item"
         item.isVisible = true
         item.button?.imageScaling = .scaleProportionallyUpOrDown
         return item
@@ -59,7 +59,7 @@ final class StatusItemController: NSObject {
         button.title = ""
         button.action = #selector(togglePopover)
         button.target = self
-        button.toolTip = "Package Police"
+        button.toolTip = "Computer Police"
         statusItem.isVisible = true
     }
 
@@ -126,7 +126,7 @@ final class StatusItemController: NSObject {
         guard let button = statusItem.button else { return }
         button.image = Self.makeMenuBarShieldImage(color: displayedIconColor)
         button.alphaValue = malwareBlinkTask == nil || malwareBlinkOn ? 1.0 : 0.18
-        button.toolTip = "Package Police: \(store.protectionState.title)"
+        button.toolTip = "Computer Police: \(store.protectionState.title)"
         statusItem.isVisible = true
     }
 
@@ -165,7 +165,7 @@ final class StatusItemController: NSObject {
     }
 
     private func recreateStatusItemForVisibilityRecovery(reason: String) {
-        NSLog("Package Police menu bar item did not materialize (%@); recreating it", reason)
+        NSLog("Computer Police menu bar item did not materialize (%@); recreating it", reason)
         statusItem.menu = nil
         statusBar.removeStatusItem(statusItem)
         statusItem = Self.makeStatusItem(statusBar: statusBar)
@@ -188,7 +188,7 @@ final class StatusItemController: NSObject {
 
         let recoveredSnapshot = StatusItemVisibilitySnapshot(statusItem)
         if recoveredSnapshot.shouldRecover {
-            NSLog("Package Police menu bar item is still hidden after recreation: %@", recoveredSnapshot.description)
+            NSLog("Computer Police menu bar item is still hidden after recreation: %@", recoveredSnapshot.description)
             MenuBarVisibilityGuidance.presentIfNeeded()
         }
     }
@@ -230,16 +230,7 @@ final class StatusItemController: NSObject {
     }
 
     private var iconColor: NSColor {
-        switch store.protectionState {
-        case .on:
-            return store.digest.malwarePreventionCount > 0 ? .systemRed : .systemGreen
-        case .degraded, .starting, .stopping:
-            return .systemYellow
-        case .failed:
-            return .systemRed
-        case .off:
-            return .secondaryLabelColor
-        }
+        .white
     }
 
     private var displayedIconColor: NSColor {
@@ -301,7 +292,7 @@ private struct StatusItemVisibilitySnapshot: CustomStringConvertible {
 
 @MainActor
 private enum MenuBarVisibilityGuidance {
-    private static let guidanceShownKey = "packagePoliceMenuBarGuidanceShownAt"
+    private static let guidanceShownKey = "computerPoliceMenuBarGuidanceShownAt"
     private static let guidanceRepeatInterval: TimeInterval = 24 * 60 * 60
     private static let settingsURL = URL(string: "x-apple.systempreferences:com.apple.MenuBarSettings")
 
@@ -311,8 +302,8 @@ private enum MenuBarVisibilityGuidance {
         defaults.set(now.timeIntervalSince1970, forKey: guidanceShownKey)
 
         let alert = NSAlert()
-        alert.messageText = "Package Police can't show its menu bar icon"
-        alert.informativeText = "macOS is running Package Police, but it may be hiding the icon in Menu Bar settings. Open Menu Bar settings and allow Package Police in the menu bar."
+        alert.messageText = "Computer Police can't show its menu bar icon"
+        alert.informativeText = "macOS is running Computer Police, but it may be hiding the icon in Menu Bar settings. Open Menu Bar settings and allow Computer Police in the menu bar."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "Open Menu Bar Settings")
         alert.addButton(withTitle: "Dismiss")

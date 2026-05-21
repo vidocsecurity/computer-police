@@ -7,10 +7,12 @@ if [[ "${1:-}" == "--purge" ]]; then
 fi
 
 app_dir="${PACKAGE_POLICE_APP_DIR:-/Applications}"
-app_path="$app_dir/PackagePolice.app"
+app_path="$app_dir/Computer Police.app"
+legacy_app_path="$app_dir/PackagePolice.app"
 binary="$app_path/Contents/Resources/bin/package-police"
 
-echo "Quitting PackagePolice.app..."
+echo "Quitting Computer Police.app..."
+osascript -e 'quit app "Computer Police"' >/dev/null 2>&1 || true
 osascript -e 'quit app "PackagePolice"' >/dev/null 2>&1 || true
 
 if [[ -x "$binary" ]]; then
@@ -24,6 +26,7 @@ fi
 
 echo "Removing $app_path..."
 rm -rf "$app_path"
+rm -rf "$legacy_app_path"
 
 if [[ "$purge" == true ]]; then
   echo "Removing ~/.package-police..."

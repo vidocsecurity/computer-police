@@ -8,7 +8,7 @@ Build an automated project hardening flow inspired by the manual dependency hard
 
 https://x.com/badlogicgames/status/2057108413113340039?s=20
 
-Goal: let Package Police inspect a project and apply or recommend the same kind of defensive supply-chain posture that `pi.dev` appears to have done manually.
+Goal: let Computer Police inspect a project and apply or recommend the same kind of defensive supply-chain posture that `pi.dev` appears to have done manually.
 
 Potential capabilities:
 
@@ -37,7 +37,7 @@ Open questions:
 - Which hardening steps should be automatic versus advisory?
 - How do we avoid breaking legitimate package-manager workflows?
 - Should policies be repo-local, user-global, or organization-managed?
-- How should this integrate with existing agent instructions and Package Police install ledger data?
+- How should this integrate with existing agent instructions and Computer Police install ledger data?
 
 ## 2. Agent Police
 
@@ -49,7 +49,7 @@ https://github.com/steipete/CodexBar
 
 Possible initial scope:
 
-- A macOS menu-bar app that shows Package Police / Agent Police status.
+- A macOS menu-bar app that shows Computer Police / Agent Police status.
 - Quick visibility into whether agent guardrails are installed and active.
 - Recent package-install events from the local ledger.
 - Warnings when agents add new dependencies, change lockfiles, or trigger lifecycle scripts.
@@ -66,7 +66,7 @@ Possible later scope:
 
 Open questions:
 
-- Should Agent Police be a separate product or the desktop surface for Package Police?
+- Should Agent Police be a separate product or the desktop surface for Computer Police?
 - What should the menu-bar app do while no project is active?
 - How much local data should be shown directly in the app versus opened in a report?
 - Can CodexBar provide enough reusable structure for a quick prototype?
@@ -80,7 +80,7 @@ The tool would inspect a developer's local filesystem and connected GitHub accou
 Possible capabilities:
 
 - Scan local projects for known malicious packages, versions, lockfile entries, and install history.
-- Inspect Package Police / Vidoc install ledger events for risky package-install timelines.
+- Inspect Computer Police / Vidoc install ledger events for risky package-install timelines.
 - Check GitHub repositories for suspicious dependency additions, lockfile changes, workflow edits, or release changes.
 - Compare local findings against organization repositories to identify whether colleagues may have installed or committed the same risky package.
 - Look for signs of credential exposure, such as suspicious GitHub Actions changes, new deploy keys, changed secrets usage, or unexpected automation.
@@ -142,7 +142,7 @@ Possible product shape:
 
 Open questions:
 
-- Should Package Police call OSV live, maintain a local cache, or support both?
+- Should Computer Police call OSV live, maintain a local cache, or support both?
 - How should we map npm, pnpm, yarn, and bun lockfile entries into OSV ecosystems and purls?
 - How do we distinguish malicious-package advisories from normal vulnerabilities in the UI and reports?
 - Should OSV checks block installs, warn only, or be policy-controlled?

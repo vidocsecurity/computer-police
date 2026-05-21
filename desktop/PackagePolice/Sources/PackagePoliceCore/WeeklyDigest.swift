@@ -54,7 +54,7 @@ public struct WeeklyDigest: Equatable, Sendable {
                 version: first.version,
                 severity: "critical",
                 advisoryID: advisoryID,
-                summary: first.blockReason ?? "Package Police blocked this package metadata or tarball.",
+                summary: first.blockReason ?? "Computer Police blocked this package metadata or tarball.",
                 recommendation: "Do not install this version. Rebuild from a trusted lockfile after choosing a safe release.",
                 count: events.count)
         }

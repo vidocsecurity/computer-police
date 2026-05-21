@@ -21,4 +21,4 @@ else
   echo "bun not found; skipping bun registry drift."
 fi
 
-echo "Registry drift simulated. PackagePolice should turn yellow and offer Repair."
+echo "Registry drift simulated. Computer Police should turn yellow and offer Repair."

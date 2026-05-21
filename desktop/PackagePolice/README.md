@@ -1,6 +1,6 @@
-# PackagePolice.app
+# Computer Police.app
 
-PackagePolice.app is the macOS menu-bar frontend for the local Package Police registry proxy.
+Computer Police.app is the macOS menu-bar frontend for the local Computer Police registry proxy.
 
 It owns the proxy lifecycle like a lightweight VPN:
 
@@ -18,14 +18,14 @@ From the repo root:
 ./scripts/dev.sh
 ```
 
-This builds the Go CLI, embeds it in `PackagePolice.app/Contents/Resources/bin/package-police`, builds the Swift app, ad-hoc signs it, installs it to `/Applications/PackagePolice.app`, and opens it.
+This builds the Go CLI, embeds it in `Computer Police.app/Contents/Resources/bin/package-police`, builds the Swift app, ad-hoc signs it, installs it to `/Applications/Computer Police.app`, and opens it.
 
 To only build the app bundle without installing:
 
 ```bash
 cd desktop/PackagePolice
 ./Scripts/package_app.sh
-open PackagePolice.app
+open "Computer Police.app"
 ```
 
 ## Manual Test Flow

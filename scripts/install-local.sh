@@ -8,7 +8,7 @@ target="$install_dir/$binary_name"
 
 mkdir -p "$install_dir"
 
-echo "Building Package Police..."
+echo "Building Computer Police..."
 (cd "$repo_root" && go build -o "$target" ./cmd/package-police)
 chmod 0755 "$target"
 

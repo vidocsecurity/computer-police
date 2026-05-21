@@ -46,7 +46,7 @@ final class ProtectionController: ObservableObject {
     func enableProtection() async {
         store.setProtectionState(.starting)
         guard resolveBinary() else {
-            fail("Package Police CLI binary is missing.")
+            fail("Computer Police CLI binary is missing.")
             return
         }
         do {
@@ -62,7 +62,7 @@ final class ProtectionController: ObservableObject {
                     store.setProtectionState(.on)
                 }
             } else {
-                degrade("Proxy is running, but npm/bun registry settings do not point at Package Police.")
+                degrade("Proxy is running, but npm/bun registry settings do not point at Computer Police.")
             }
         } catch {
             fail(error.localizedDescription)
@@ -87,7 +87,7 @@ final class ProtectionController: ObservableObject {
 
     func repair() async {
         guard resolveBinary() else {
-            fail("Package Police CLI binary is missing.")
+            fail("Computer Police CLI binary is missing.")
             return
         }
         do {
@@ -106,7 +106,7 @@ final class ProtectionController: ObservableObject {
 
     func restart() async {
         guard resolveBinary() else {
-            fail("Package Police CLI binary is missing.")
+            fail("Computer Police CLI binary is missing.")
             return
         }
         store.proxyStatus = .restarting
@@ -188,7 +188,7 @@ final class ProtectionController: ObservableObject {
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
-        throw lastError ?? NSError(domain: "PackagePolice", code: 1, userInfo: [NSLocalizedDescriptionKey: "Proxy did not become healthy."])
+        throw lastError ?? NSError(domain: "ComputerPolice", code: 1, userInfo: [NSLocalizedDescriptionKey: "Proxy did not become healthy."])
     }
 
     private func waitForAdvisorySync() async throws {
@@ -214,7 +214,7 @@ final class ProtectionController: ObservableObject {
 
     private func spawnProxy() throws {
         guard let binary else {
-            throw NSError(domain: "PackagePolice", code: 2, userInfo: [NSLocalizedDescriptionKey: "Package Police CLI binary is missing."])
+            throw NSError(domain: "ComputerPolice", code: 2, userInfo: [NSLocalizedDescriptionKey: "Computer Police CLI binary is missing."])
         }
         if let proxyProcess, proxyProcess.isRunning {
             return
@@ -232,7 +232,7 @@ final class ProtectionController: ObservableObject {
 
     private func runCLI(_ arguments: [String]) async throws {
         guard let binary else {
-            throw NSError(domain: "PackagePolice", code: 2, userInfo: [NSLocalizedDescriptionKey: "Package Police CLI binary is missing."])
+            throw NSError(domain: "ComputerPolice", code: 2, userInfo: [NSLocalizedDescriptionKey: "Computer Police CLI binary is missing."])
         }
         try await withCheckedThrowingContinuation { continuation in
             let process = Process()
@@ -249,7 +249,7 @@ final class ProtectionController: ObservableObject {
                     let data = output.fileHandleForReading.readDataToEndOfFile()
                     let message = String(data: data, encoding: .utf8) ?? "Command failed"
                     continuation.resume(throwing: NSError(
-                        domain: "PackagePolice",
+                        domain: "ComputerPolice",
                         code: Int(process.terminationStatus),
                         userInfo: [NSLocalizedDescriptionKey: message.trimmingCharacters(in: .whitespacesAndNewlines)]))
                 }
@@ -288,7 +288,7 @@ final class ProtectionController: ObservableObject {
             store.proxyStatus = .running
             store.registryStatus = registryProbe.status()
             if store.protectionState.isEnabled && store.registryStatus != .enabled {
-                degrade("Protection partial - npm/bun registry settings no longer point at Package Police.")
+                degrade("Protection partial - npm/bun registry settings no longer point at Computer Police.")
             } else if store.protectionState.isEnabled {
                 store.setProtectionState(.on)
             }

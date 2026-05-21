@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = notification
-        ProcessInfo.processInfo.disableAutomaticTermination("Package Police is a menu bar agent")
+        ProcessInfo.processInfo.disableAutomaticTermination("Computer Police is a menu bar agent")
         didFinishLaunching = true
         startIfReady()
     }

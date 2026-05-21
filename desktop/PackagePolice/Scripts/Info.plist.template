@@ -7,11 +7,13 @@
   <key>CFBundleExecutable</key>
   <string>PackagePolice</string>
   <key>CFBundleIdentifier</key>
-  <string>dev.packagepolice.app</string>
+  <string>dev.computerpolice.app</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
+  <key>CFBundleDisplayName</key>
+  <string>Computer Police</string>
   <key>CFBundleName</key>
-  <string>PackagePolice</string>
+  <string>Computer Police</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -23,7 +25,7 @@
   <key>LSUIElement</key>
   <true/>
   <key>NSHumanReadableCopyright</key>
-  <string>Copyright 2026 Package Police</string>
+  <string>Copyright 2026 Computer Police</string>
   <key>NSUserNotificationAlertStyle</key>
   <string>alert</string>
 </dict>

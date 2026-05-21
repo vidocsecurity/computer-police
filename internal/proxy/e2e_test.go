@@ -438,12 +438,12 @@ func requireBlockedInstall(t *testing.T, output string, err error) {
 func requireBlockedPythonInstall(t *testing.T, output string, err error) {
 	t.Helper()
 	if err == nil {
-		t.Fatalf("install succeeded, want Package Police block\n%s", output)
+		t.Fatalf("install succeeded, want Computer Police block\n%s", output)
 	}
 	if strings.Contains(output, "403") || strings.Contains(output, "No matching distribution found for package-police-py-test==1.0.0") {
 		return
 	}
-	t.Fatalf("install failed without Package Police block evidence\nerr=%v\n%s", err, output)
+	t.Fatalf("install failed without Computer Police block evidence\nerr=%v\n%s", err, output)
 }
 
 func e2eEnv(t *testing.T) []string {

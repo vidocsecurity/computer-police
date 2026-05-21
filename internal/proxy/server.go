@@ -161,7 +161,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusForbidden
 		blockReason = decision.Reason
 		blockedBy = decision.BlockedBy
-		http.Error(w, "blocked by Package Police registry policy", status)
+		http.Error(w, "blocked by Computer Police registry policy", status)
 		return
 	}
 
@@ -195,7 +195,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			status = http.StatusForbidden
 			blockReason = decision.Reason
 			blockedBy = decision.BlockedBy
-			http.Error(w, "blocked by Package Police registry policy", status)
+			http.Error(w, "blocked by Computer Police registry policy", status)
 			return
 		}
 		if rewriter, ok := p.inspector.(ResponseRewriter); ok {
@@ -204,7 +204,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				status = http.StatusForbidden
 				blockReason = rewrite.Reason
 				blockedBy = rewrite.BlockedBy
-				http.Error(w, "blocked by Package Police registry policy", status)
+				http.Error(w, "blocked by Computer Police registry policy", status)
 				return
 			}
 			if rewrite.Body != nil {
@@ -250,7 +250,7 @@ func (p *RegistryProxy) upstreamFor(info RequestInfo) *url.URL {
 func RunForeground(out io.Writer, opts ServerOptions) error {
 	opts = opts.withDefaults()
 	if opts.Host == "0.0.0.0" || opts.Host == "::" {
-		fmt.Fprintf(out, "warning: binding Package Police registry proxy to %s exposes it beyond loopback\n", opts.Host)
+		fmt.Fprintf(out, "warning: binding Computer Police registry proxy to %s exposes it beyond loopback\n", opts.Host)
 	}
 	advisoryStore := NewMalwareAdvisoryStoreFromEnv()
 	advisoryStore.StartBackgroundRefresh(context.Background())
@@ -268,7 +268,7 @@ func RunForeground(out io.Writer, opts ServerOptions) error {
 		return err
 	}
 	defer os.Remove(paths.RegistryProxyPIDPath())
-	fmt.Fprintf(out, "Package Police registry proxy listening on http://%s\n", listener.Addr().String())
+	fmt.Fprintf(out, "Computer Police registry proxy listening on http://%s\n", listener.Addr().String())
 	mux := http.NewServeMux()
 	mountAPIHandlers(mux, advisoryStore)
 	mux.Handle("/", handler)

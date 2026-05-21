@@ -12,7 +12,7 @@ struct PreferencesView: View {
             Section("Protection") {
                 Toggle("Auto-enable protection at launch", isOn: $store.autoEnableAtLaunch)
                 Toggle("Keep proxy running when app quits", isOn: $store.keepProxyRunningOnQuit)
-                Toggle("Launch Package Police at login", isOn: Binding(
+                Toggle("Launch Computer Police at login", isOn: Binding(
                     get: { launchAtLogin },
                     set: { newValue in
                         launchAtLogin = newValue
@@ -51,7 +51,7 @@ struct PreferencesView: View {
             }
 
             Section("About") {
-                Text("Package Police monitors local package installs through a loopback registry proxy.")
+                Text("Computer Police monitors local package installs through a loopback registry proxy.")
                 Text("Malware prevention counts come from proxy-blocked OSV MAL advisories.")
                     .foregroundStyle(.secondary)
             }

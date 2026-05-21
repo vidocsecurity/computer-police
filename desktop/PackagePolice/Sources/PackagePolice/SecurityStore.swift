@@ -22,9 +22,9 @@ enum ProtectionState: Equatable {
 
     var detail: String {
         switch self {
-        case .off: return "Package installs are bypassing Package Police."
+        case .off: return "Package installs are bypassing Computer Police."
         case .starting: return "Starting the local registry proxy."
-        case .on: return "Registry traffic is flowing through Package Police."
+        case .on: return "Registry traffic is flowing through Computer Police."
         case let .degraded(reason): return reason
         case .stopping: return "Restoring package-manager registry settings."
         case let .failed(reason): return reason

@@ -3,11 +3,13 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 app_dir="${PACKAGE_POLICE_APP_DIR:-/Applications}"
-app_path="$app_dir/PackagePolice.app"
+app_path="$app_dir/Computer Police.app"
+legacy_app_path="$app_dir/PackagePolice.app"
 dev_advisory_dir="${PACKAGE_POLICE_DEV_ADVISORY_DIR:-$repo_root/internal/proxy/testdata/osv}"
 dev_app_log="${PACKAGE_POLICE_DEV_APP_LOG:-/tmp/package-police-dev-app.log}"
 
-echo "Quitting any running PackagePolice.app..."
+echo "Quitting any running Computer Police.app..."
+osascript -e 'quit app "Computer Police"' >/dev/null 2>&1 || true
 osascript -e 'quit app "PackagePolice"' >/dev/null 2>&1 || true
 
 if command -v package-police >/dev/null 2>&1; then
@@ -25,12 +27,13 @@ echo "Building dev app bundle..."
 echo "Installing app to $app_path..."
 mkdir -p "$app_dir"
 rm -rf "$app_path"
-cp -R "$repo_root/desktop/PackagePolice/PackagePolice.app" "$app_path"
+rm -rf "$legacy_app_path"
+cp -R "$repo_root/desktop/PackagePolice/Computer Police.app" "$app_path"
 
 echo "Ensuring no stale proxy is still bound..."
 "$app_path/Contents/Resources/bin/package-police" proxy stop >/dev/null 2>&1 || true
 
-echo "Launching PackagePolice.app..."
+echo "Launching Computer Police.app..."
 echo "Using dev malware advisories from $dev_advisory_dir"
 nohup env PACKAGE_POLICE_OSV_ADVISORY_DIR="$dev_advisory_dir" \
   "$app_path/Contents/MacOS/PackagePolice" >"$dev_app_log" 2>&1 &
