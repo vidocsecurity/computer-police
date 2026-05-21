@@ -71,7 +71,7 @@ func TestEnableDisableProjectRestoresCustomRegistries(t *testing.T) {
 
 func TestDisableGlobalRestoresBackupsWithoutPackageManagers(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	t.Setenv("PATH", t.TempDir())
 
 	npmrc := filepath.Join(home, ".npmrc")
@@ -200,7 +200,7 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 	configHome := filepath.Join(home, ".config")
 	fakeBin := t.TempDir()
 	t.Setenv("PATH", fakeBin)
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 	t.Setenv("APPDATA", configHome)
 	t.Setenv("LOCALAPPDATA", configHome)
@@ -273,7 +273,7 @@ func TestEnableDisableGlobalPrefersExistingLegacyPipConfig(t *testing.T) {
 	configHome := filepath.Join(home, ".config")
 	fakeBin := t.TempDir()
 	t.Setenv("PATH", fakeBin)
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 	t.Setenv("APPDATA", configHome)
 	t.Setenv("LOCALAPPDATA", configHome)
@@ -325,7 +325,7 @@ func TestEnableDisableGlobalRemovesSharedPipConfigWhenCreated(t *testing.T) {
 	configHome := filepath.Join(home, ".config")
 	fakeBin := t.TempDir()
 	t.Setenv("PATH", fakeBin)
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 	t.Setenv("APPDATA", configHome)
 	t.Setenv("LOCALAPPDATA", configHome)
@@ -374,7 +374,7 @@ func TestEnableGlobalDoesNotModifyPoetryOrPDMProjectConfigs(t *testing.T) {
 	configHome := filepath.Join(home, ".config")
 	fakeBin := t.TempDir()
 	t.Setenv("PATH", fakeBin)
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 	t.Setenv("APPDATA", configHome)
 	t.Setenv("LOCALAPPDATA", configHome)
@@ -409,7 +409,7 @@ func TestDoctorReportsPythonRegistryConfigs(t *testing.T) {
 	home := t.TempDir()
 	configHome := filepath.Join(home, ".config")
 	project := t.TempDir()
-	t.Setenv("HOME", home)
+	setTestHome(t, home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
 	t.Setenv("APPDATA", configHome)
 	t.Setenv("LOCALAPPDATA", configHome)
@@ -464,6 +464,12 @@ func writeFakeExecutable(t *testing.T, dir, name string) {
 	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func setTestHome(t *testing.T, home string) {
+	t.Helper()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 }
 
 func pipConfigFileName() string {
