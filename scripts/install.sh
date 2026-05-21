@@ -38,8 +38,8 @@ Options:
       --uninstall           Remove the public install
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/install.sh | bash
-  curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/install.sh | bash -s -- --version v0.1.0
+  curl -fsSL https://computer.police.dev/install | bash
+  curl -fsSL https://computer.police.dev/install | bash -s -- --version v0.1.0
   ./scripts/install.sh --uninstall
 EOF
 }
@@ -240,6 +240,19 @@ add_to_path() {
   case ":$PATH:" in
     *":$INSTALL_DIR:"*) return ;;
   esac
+
+  # GitHub Actions sets $GITHUB_PATH to a special file the runner reads
+  # between steps to extend $PATH. Append $INSTALL_DIR so subsequent steps
+  # (e.g. `- run: computer-police install`) find the binary automatically,
+  # without users having to write `echo ... >> "$GITHUB_PATH"` themselves.
+  if [ -n "${GITHUB_PATH:-}" ] && [ -f "$GITHUB_PATH" ] && [ -w "$GITHUB_PATH" ]; then
+    if grep -Fxq "$INSTALL_DIR" "$GITHUB_PATH" 2>/dev/null; then
+      return
+    fi
+    printf '%s\n' "$INSTALL_DIR" >> "$GITHUB_PATH"
+    echo "Added $INSTALL_DIR to \$GITHUB_PATH for subsequent workflow steps."
+    return
+  fi
 
   command_line="$(path_command_for_shell)"
   config_file=""

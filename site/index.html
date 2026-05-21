@@ -153,9 +153,7 @@ computer-police install</code></pre></div>
                 aria-labelledby="hero-tab-gha"
                 hidden
               ><pre><code>- name: Install Computer Police
-  run: |
-    curl -fsSL https://computer.police.dev/install | bash
-    echo "$HOME/.computer-police/bin" >> "$GITHUB_PATH"
+  run: curl -fsSL https://computer.police.dev/install | bash
 
 - run: computer-police install
 - run: npm ci   # now behind Computer Police</code></pre></div>
@@ -503,9 +501,7 @@ computer-police install</code></pre></div>
               aria-labelledby="cta-tab-gha"
               hidden
             ><pre><code>- name: Install Computer Police
-  run: |
-    curl -fsSL https://computer.police.dev/install | bash
-    echo "$HOME/.computer-police/bin" >> "$GITHUB_PATH"
+  run: curl -fsSL https://computer.police.dev/install | bash
 
 - run: computer-police install
 - run: npm ci   # now behind Computer Police</code></pre></div>

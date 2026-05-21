@@ -105,9 +105,7 @@ Computer Police is designed to work the same way in a CI runner, a devcontainer,
 
 ```yaml
 - name: Install Computer Police
-  run: |
-    curl -fsSL https://computer.police.dev/install | bash
-    echo "$HOME/.computer-police/bin" >> "$GITHUB_PATH"
+  run: curl -fsSL https://computer.police.dev/install | bash
 
 - name: Enable supply-chain protection
   run: computer-police install
@@ -115,6 +113,8 @@ Computer Police is designed to work the same way in a CI runner, a devcontainer,
 - name: Install dependencies (now behind Computer Police)
   run: npm ci
 ```
+
+The installer auto-extends `$GITHUB_PATH` when it detects GitHub Actions, so subsequent steps find `computer-police` on `PATH` without any extra `echo "$HOME/..." >> "$GITHUB_PATH"` boilerplate.
 
 Because protection happens at the package-manager layer, agents do not need plugins. Any supported package manager invoked by Claude Code, Codex, OpenCode, Cursor, or a custom harness goes through the same check.
 
