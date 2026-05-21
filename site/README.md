@@ -54,33 +54,39 @@ Connect the repository, set the build output directory to `site/`, leave the bui
 
 ### Custom domain
 
-The canonical domain is `computer.police.dev`. Add it in your host's settings and a `CNAME` file inside `site/`:
+The canonical domain is `computer.police.dev`. Production is currently
+served by Cloudflare Pages auto-deploying this `site/` folder on every push
+to `main`. Point a `CNAME` record at the Cloudflare Pages target
+(`computer-police.pages.dev`) at your DNS provider; no extra files are
+required in this directory.
 
-```bash
-echo computer.police.dev > site/CNAME
-```
-
-Update `og:url`, `og:image`, and the canonical references inside `index.html` if you change the domain.
+If you change the domain, update `og:url`, `og:image`, and the canonical
+references inside `index.html`, the `self update` default URL in
+`cmd/computer-police/main.go`, and the install one-liner in the root
+`README.md` and `docs/RELEASING.md`.
 
 ### `/install` endpoint
 
-The install one-liner advertised on the site, in the root `README.md`, and in the CLI's `self update` default is:
+The install one-liner advertised everywhere is:
 
 ```bash
 curl -fsSL https://computer.police.dev/install | bash
 ```
 
-`computer.police.dev/install` must serve `scripts/install.sh` from the repo root over HTTPS. The simplest setups:
+`site/install` is a verbatim copy of `scripts/install.sh` checked into
+the repo so the host (Cloudflare Pages today, any static host
+tomorrow) can serve it as a plain file with no redirect hop. The Go
+binary's `self update` flow downloads the same URL.
 
-- **Cloudflare Pages / Netlify / Vercel** — add a `_redirects` (or `vercel.json`) rule from `/install` to the raw GitHub URL with a `302` so `curl -fsSL` (which follows redirects) lands on the script. Example for Cloudflare/Netlify, place `site/_redirects`:
+After editing `scripts/install.sh`, sync the copy and commit both:
 
-  ```
-  /install   https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh   302
-  ```
+```bash
+cp scripts/install.sh site/install
+git add scripts/install.sh site/install
+```
 
-- **Self-hosted / nginx** — proxy `/install` to the same raw GitHub URL, or check `scripts/install.sh` into `site/install` directly so it's served as a static file.
-
-Whichever path you choose, the response body at `/install` MUST be the contents of `scripts/install.sh` (or a redirect to it) so piping into `bash` works.
+CI enforces this: the `site` job in `.github/workflows/ci.yml` fails if
+`site/install` ever drifts from `scripts/install.sh`.
 
 ## Updating content
 
