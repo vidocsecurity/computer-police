@@ -28,6 +28,12 @@ Then click the shield in the macOS menu bar. Useful test helpers:
 
 See `desktop/PackagePolice/README.md` for the full click-through checklist.
 
+## CI and Releases
+
+GitHub Actions run Go tests across Linux, macOS, and Windows, plus Swift app builds/tests on macOS.
+
+Release tags such as `v0.1.0` publish a GitHub Release with a zipped macOS app and cross-compiled CLI archives. See `docs/RELEASING.md`.
+
 ## CLI
 
 ```bash

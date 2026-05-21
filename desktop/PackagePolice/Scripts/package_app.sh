@@ -9,6 +9,7 @@ app_name="Computer Police"
 app_path="$package_root/$app_name.app"
 build_dir="$package_root/.build"
 embedded_bin_dir="$build_dir/bin"
+export GOCACHE="${GOCACHE:-$repo_root/.build/go-cache}"
 
 mkdir -p "$embedded_bin_dir"
 

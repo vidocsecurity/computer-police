@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 dist_dir="${DIST_DIR:-$repo_root/dist}"
 version="${VERSION:-dev}"
+export GOCACHE="${GOCACHE:-$repo_root/.build/go-cache}"
 
 targets=(
   "darwin/amd64/macos-x86_64"

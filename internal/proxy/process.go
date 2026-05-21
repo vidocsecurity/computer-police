@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"package-police/internal/paths"
@@ -48,7 +47,7 @@ func StartBackground(out io.Writer, opts ServerOptions) error {
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	cmd.Stdin = nil
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	configureBackgroundProcess(cmd)
 	if err := cmd.Start(); err != nil {
 		_ = logFile.Close()
 		return err
@@ -72,7 +71,7 @@ func Stop(out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	_ = process.Signal(syscall.SIGTERM)
+	_ = signalTerminate(process)
 	deadline := time.Now().Add(3 * time.Second)
 	for time.Now().Before(deadline) {
 		if !pidAlive(status.PID) {
@@ -183,7 +182,7 @@ func pidAlive(pid int) bool {
 	if err != nil {
 		return false
 	}
-	return process.Signal(syscall.Signal(0)) == nil
+	return processAlive(process)
 }
 
 func waitUntilReachable(host string, port int, timeout time.Duration) error {
