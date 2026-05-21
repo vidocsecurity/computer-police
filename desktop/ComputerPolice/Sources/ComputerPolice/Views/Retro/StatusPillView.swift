@@ -7,12 +7,12 @@ struct StatusPillView: View {
     @ObservedObject var store: SecurityStore
 
     @Environment(\.retro) private var palette
-    @State private var expanded = false
+    @State private var detailsVisible = false
 
     var body: some View {
         let components = ComponentSnapshot.build(from: store)
         let aggregate = components.aggregate
-        let badStuff = components.contains { $0.state != .ok }
+        let requiresAttention = components.contains { $0.state == .warn || $0.state == .fail }
 
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
@@ -23,16 +23,18 @@ struct StatusPillView: View {
                     .foregroundStyle(palette.textPrimary)
                 Spacer(minLength: 8)
                 Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { expanded.toggle() }
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        detailsVisible.toggle()
+                    }
                 } label: {
-                    Text(expanded ? "Hide" : "Details")
+                    Text(detailsVisible ? "Hide" : "Details")
                 }
                 .buttonStyle(BracketButtonStyle())
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
 
-            if expanded || badStuff {
+            if detailsVisible {
                 Rectangle()
                     .fill(palette.bevelShadow.opacity(0.5))
                     .frame(height: 1)
@@ -50,7 +52,9 @@ struct StatusPillView: View {
         .onAppear {
             // Stay expanded if we boot into a degraded state so the user
             // sees what to fix immediately.
-            if badStuff { expanded = true }
+            if requiresAttention {
+                detailsVisible = true
+            }
         }
     }
 
@@ -157,7 +161,7 @@ private struct ComponentSnapshot: Identifiable {
         case "ready":
             return ComponentSnapshot(
                 label: "Malware",
-                value: "\(status.advisoryCount) rules",
+                value: "\(status.advisoryCount) rules, \(status.freshnessSummary)",
                 state: .ok)
         case "syncing":
             let detail: String
@@ -169,7 +173,7 @@ private struct ComponentSnapshot: Identifiable {
             }
             return ComponentSnapshot(label: "Malware", value: detail, state: .warn)
         case "stale":
-            return ComponentSnapshot(label: "Malware", value: "Stale", state: .warn)
+            return ComponentSnapshot(label: "Malware", value: "Stale, \(status.freshnessSummary)", state: .warn)
         case "error":
             return ComponentSnapshot(label: "Malware", value: "Error", state: .fail)
         default:

@@ -18,7 +18,7 @@ From the repo root:
 ./scripts/dev.sh
 ```
 
-This builds the Go CLI, embeds it in `Computer Police.app/Contents/Resources/bin/computer-police`, builds the Swift app, ad-hoc signs it, installs it to `/Applications/Computer Police.app`, and opens it.
+This builds the Go CLI, embeds it in `Computer Police.app/Contents/Resources/bin/computer-police`, installs `computer-police` to your local bin directory, builds the Swift app, ad-hoc signs it, installs it to `/Applications/Computer Police.app`, and opens it.
 
 To only build the app bundle without installing:
 
