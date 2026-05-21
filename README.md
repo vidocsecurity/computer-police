@@ -24,6 +24,51 @@ It runs locally as a registry proxy that sits between your package manager and t
 
 It's built for the agent era. Claude Code, Codex, OpenCode, Cursor's agent, and any custom harness install packages constantly on your behalf — and they have no idea when one of them is malware. Computer Police is the seatbelt.
 
+## Install
+
+One-liner for macOS, Linux, and Windows (via WSL or Git Bash):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
+```
+
+The installer detects your OS and architecture, downloads the matching GitHub Release artifact, verifies its SHA-256 checksum, and installs the CLI to `~/.computer-police/bin/computer-police`. On macOS it also installs `Computer Police.app` to `/Applications`.
+
+Pin a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --version v0.1.0
+```
+
+Update or uninstall later:
+
+```bash
+computer-police self update
+computer-police self uninstall
+```
+
+Both go through the same signed installer script, with the same checksum verification.
+
+## Quickstart
+
+Sixty seconds to your first block.
+
+```bash
+# 1. Start protection (also rewrites your npm/bun/pip config to use the proxy).
+computer-police install
+
+# 2. Confirm everything looks right.
+computer-police doctor
+
+# 3. Try to install a known-malicious package. You should see HTTP 403.
+npm install some-known-malicious-package@1.2.3
+
+# 4. Look at the local event ledger.
+computer-police ledger list --limit 20
+```
+
+When you're done, `computer-police uninstall` stops the proxy and restores every package-manager config file it changed.
+
 ## Why Computer Police
 
 - **Designed for agents.** Any package manager an agent invokes — `npm`, `pnpm`, `yarn`, `bun`, `pip`, `uv`, `poetry`, `pdm`, `pipx` — is protected automatically as soon as Computer Police is installed. No agent-specific plugin required.
@@ -66,51 +111,6 @@ The malware advisory cache is refreshed in the background from the public OSV sn
 | 3 | Refresh malware advisories from the public OSV snapshot | Phone home, collect analytics, or contact any private endpoint |
 | 4 | Edit `npmrc`, `bunfig`, and `pip.conf` to route through `127.0.0.1` | Modify package binaries, lockfiles, or installed packages |
 | 5 | Verify SHA-256 checksums of its own release artifacts on install | Auto-update itself without your consent |
-
-## Install
-
-### One-liner (macOS, Linux, Windows via WSL/Git Bash)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
-```
-
-The installer detects your OS and architecture, downloads the matching GitHub Release artifact, verifies its SHA-256 checksum, and installs the CLI to `~/.computer-police/bin/computer-police`. On macOS it also installs `Computer Police.app` to `/Applications` and launches the menu-bar app so protection can auto-enable.
-
-Pin a version:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --version v0.1.0
-```
-
-### Update and uninstall
-
-```bash
-computer-police self update
-computer-police self uninstall
-```
-
-Both go through the same signed installer script, with the same checksum verification.
-
-## Quickstart
-
-Sixty seconds to your first block.
-
-```bash
-# 1. Start protection (also rewrites your npm/bun/pip config to use the proxy).
-computer-police install
-
-# 2. Confirm everything looks right.
-computer-police doctor
-
-# 3. Try to install a known-malicious package. You should see HTTP 403.
-npm install some-known-malicious-package@1.2.3
-
-# 4. Look at the local event ledger.
-computer-police ledger list --limit 20
-```
-
-When you're done, `computer-police uninstall` stops the proxy and restores every package-manager config file it changed.
 
 ## First-party support for coding agents
 
