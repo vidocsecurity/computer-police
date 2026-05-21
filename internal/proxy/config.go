@@ -725,14 +725,18 @@ func userBunfigPath() (string, error) {
 }
 
 func userPipConfPath() (string, error) {
+	name := "pip.conf"
+	if runtime.GOOS == "windows" {
+		name = "pip.ini"
+	}
 	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
-		return filepath.Join(configDir, "pip", "pip.conf"), nil
+		return filepath.Join(configDir, "pip", name), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".pip", "pip.conf"), nil
+	return filepath.Join(home, ".pip", name), nil
 }
 
 func userUVConfigPath() (string, error) {
