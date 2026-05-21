@@ -45,7 +45,7 @@ Malware advisory data is cached at `~/.computer-police/registry-proxy/malware-ad
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
 ```
 
-Use `computer-police self update` to update and `computer-police self uninstall` to remove the public install. The installer verifies release SHA-256 checksums before extracting artifacts. See `docs/RELEASING.md` for version pinning and platform details.
+Use `computer-police self update` to update and `computer-police self uninstall` to remove the public install. On macOS the installer launches the menu-bar app after installation so protection can auto-enable. The installer verifies release SHA-256 checksums before extracting artifacts. See `docs/RELEASING.md` for version pinning and platform details.
 
 ## Package Manager Coverage
 
