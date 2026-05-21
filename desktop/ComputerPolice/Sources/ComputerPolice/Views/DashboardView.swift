@@ -16,9 +16,9 @@ struct DashboardView: View {
                     CaughtPosterView(store: store)
                     StatusPillView(store: store)
                     StatStripView(
-                        installs: store.digest.installsThisWeek,
-                        caught: store.digest.malwarePreventionCount,
-                        blocked: store.digest.preventedCount)
+                        scanned: store.digest.installsThisWeek,
+                        clean: max(0, store.digest.installsThisWeek - store.digest.malwarePreventionCount),
+                        caught: store.digest.malwarePreventionCount)
                     RecommendedActionsView(store: store, protection: protection)
                     PatrolLogView(events: store.digest.recentEvents, store: store)
                     if diagnosticsExpanded {

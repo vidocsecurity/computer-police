@@ -83,32 +83,47 @@ struct PatrolLogView: View {
     @ViewBuilder
     private func eventRow(_ event: DigestEvent, alt: Bool) -> some View {
         let expanded = expandedID == event.id
+        let row = rowOutcome(for: event)
         VStack(spacing: 0) {
             Button {
                 toggle(eventID: event.id)
             } label: {
-                HStack(spacing: 8) {
-                    Text(timeString(event))
-                        .font(.retroCaption)
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(width: 38, alignment: .leading)
-                    EcosystemBadge(manager: event.manager)
-                    Text(event.coordinate)
-                        .font(.retroCaption)
-                        .foregroundStyle(palette.textPrimary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer(minLength: 6)
-                    Text(statusText(for: event))
-                        .font(.retroLabel)
-                        .tracking(0.5)
-                        .foregroundStyle(statusColor(for: event))
-                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(palette.textTertiary)
+                HStack(spacing: 0) {
+                    // Leading 3-px colored bar: the eye lands here first
+                    // when scanning the log, so the row's outcome is read
+                    // before the ecosystem badge or package text.
+                    Rectangle()
+                        .fill(row.color(palette: palette))
+                        .frame(width: 3)
+                        .opacity(row == .clean ? 0.55 : 1.0)
+
+                    HStack(spacing: 8) {
+                        Text(row.glyph)
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundStyle(row.color(palette: palette))
+                            .frame(width: 12, alignment: .center)
+                        Text(timeString(event))
+                            .font(.retroCaption)
+                            .foregroundStyle(palette.textSecondary)
+                            .frame(width: 36, alignment: .leading)
+                        EcosystemBadge(manager: event.manager)
+                        Text(event.coordinate)
+                            .font(.retroCaption)
+                            .foregroundStyle(palette.textPrimary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer(minLength: 6)
+                        Text(row.label)
+                            .font(.retroLabel)
+                            .tracking(0.5)
+                            .foregroundStyle(row.color(palette: palette))
+                        Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundStyle(palette.textTertiary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
@@ -162,19 +177,51 @@ struct PatrolLogView: View {
         return formatter.string(from: date)
     }
 
-    private func statusText(for event: DigestEvent) -> String {
-        if event.isMalwarePrevented { return "CAUGHT" }
-        if event.isVulnerable { return "REVIEW" }
-        if event.statusCode >= 400 { return "BLOCK" }
-        return "OK"
+    /// Single source of truth for a row's status. Label, color, and glyph
+    /// must agree, otherwise the row reads as a contradiction (e.g. red
+    /// badge + green status text). The previous code split these across
+    /// three independent functions and that is exactly how `BLOCK` ended
+    /// up gray and `CAUGHT` ended up warning-orange.
+    private enum RowOutcome {
+        case clean
+        case caught
+        case review
+        case error
+
+        var label: String {
+            switch self {
+            case .clean: return "CLEAN"
+            case .caught: return "CAUGHT"
+            case .review: return "REVIEW"
+            case .error: return "ERROR"
+            }
+        }
+
+        var glyph: String {
+            switch self {
+            case .clean: return "✓"
+            case .caught: return "★"
+            case .review: return "!"
+            case .error: return "×"
+            }
+        }
+
+        func color(palette: Retro.Palette) -> Color {
+            switch self {
+            case .clean: return palette.positive
+            case .caught: return palette.accent
+            case .review: return palette.warning
+            case .error: return palette.critical
+            }
+        }
     }
 
-    private func statusColor(for event: DigestEvent) -> Color {
-        if event.isMalwarePrevented { return palette.warning }
-        if event.isVulnerable { return palette.warning }
-        if event.statusCode >= 500 { return palette.critical }
-        if event.statusCode >= 400 { return palette.textSecondary }
-        return palette.positive
+    private func rowOutcome(for event: DigestEvent) -> RowOutcome {
+        if event.isMalwarePrevented { return .caught }
+        if event.isVulnerable { return .review }
+        if event.statusCode >= 500 { return .error }
+        if event.statusCode >= 400 { return .error }
+        return .clean
     }
 
     private func tooltip(for event: DigestEvent) -> String {
@@ -246,21 +293,30 @@ struct PatrolLogView: View {
     }
 }
 
+/// Identifies the ecosystem without competing with the row's outcome
+/// signal. Brand color shows up only as a thin outline plus a 3-px dot —
+/// the label text itself stays neutral, so an "npm" row no longer looks
+/// alarming next to a CLEAN status.
 private struct EcosystemBadge: View {
     let manager: String
 
     @Environment(\.retro) private var palette
 
     var body: some View {
-        Text(short.uppercased())
-            .font(.system(size: 9, weight: .bold, design: .monospaced))
-            .tracking(0.3)
-            .foregroundStyle(palette.textPrimary)
-            .frame(width: 30, height: 12)
-            .background(color.opacity(0.22))
-            .overlay(
-                Rectangle()
-                    .stroke(color.opacity(0.65), lineWidth: 1))
+        HStack(spacing: 3) {
+            Circle()
+                .fill(brandColor)
+                .frame(width: 4, height: 4)
+            Text(short)
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .tracking(0.2)
+                .foregroundStyle(palette.textSecondary)
+        }
+        .frame(width: 38, height: 12, alignment: .leading)
+        .padding(.horizontal, 3)
+        .overlay(
+            Rectangle()
+                .stroke(palette.bevelShadow.opacity(0.35), lineWidth: 1))
     }
 
     private var short: String {
@@ -269,16 +325,23 @@ private struct EcosystemBadge: View {
         case "bun": return "bun"
         case "yarn": return "yarn"
         case "pnpm": return "pnpm"
+        case "pip": return "pip"
+        case "uv": return "uv"
+        case "poetry": return "poet"
+        case "pdm": return "pdm"
+        case "pipx": return "pipx"
         default: return "?"
         }
     }
 
-    private var color: Color {
+    private var brandColor: Color {
         switch manager.lowercased() {
         case "npm": return Color(red: 0.80, green: 0.20, blue: 0.20)
         case "bun": return Color(red: 0.96, green: 0.74, blue: 0.36)
         case "yarn": return Color(red: 0.16, green: 0.40, blue: 0.78)
         case "pnpm": return Color(red: 0.96, green: 0.62, blue: 0.13)
+        case "pip", "uv", "poetry", "pdm", "pipx":
+            return Color(red: 0.22, green: 0.43, blue: 0.65)
         default: return palette.textTertiary
         }
     }

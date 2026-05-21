@@ -107,8 +107,10 @@ struct HeroPanel: View {
         switch store.protectionState {
         case .off: return "Package installs are bypassing Officer Mac."
         case .on:
-            if store.digest.malwarePreventionCount > 0 {
-                return "On patrol. \(store.digest.malwarePreventionCount) caught this week."
+            let caught = store.digest.malwarePreventionCount
+            if caught > 0 {
+                let suffix = caught == 1 ? "" : "s"
+                return "On patrol. Stopped \(caught) malicious install\(suffix) this week."
             }
             return "On patrol. Quiet shift so far."
         case .starting: return "Starting the local registry proxy."
@@ -119,12 +121,14 @@ struct HeroPanel: View {
     }
 
     private var facts: String {
-        let installs = store.digest.installsThisWeek
+        let scanned = store.digest.installsThisWeek
         let caught = store.digest.malwarePreventionCount
+        let clean = max(0, scanned - caught)
+        let core = "\(caught) caught · \(clean) clean"
         if let lastTime = lastEventTimeString {
-            return "\(format(installs))·\(format(caught))·last \(lastTime)"
+            return "\(core) · last \(lastTime)"
         }
-        return "\(format(installs)) installs · \(format(caught)) caught"
+        return core
     }
 
     private var lastEventTimeString: String? {
@@ -134,10 +138,6 @@ struct HeroPanel: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
-    }
-
-    private func format(_ n: Int) -> String {
-        String(format: "%04d", min(n, 9999))
     }
 
     private var sparklineValues: [Int] {
