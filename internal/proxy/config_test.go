@@ -166,11 +166,16 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 	t.Setenv("PATH", fakeBin)
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("APPDATA", configHome)
+	t.Setenv("LOCALAPPDATA", configHome)
 	writeFakeExecutable(t, fakeBin, "pip")
 	writeFakeExecutable(t, fakeBin, "pipx")
 	writeFakeExecutable(t, fakeBin, "uv")
 
-	pipConf := filepath.Join(configHome, "pip", "pip.conf")
+	pipConf, err := userPipConfPath()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.MkdirAll(filepath.Dir(pipConf), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +207,11 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 			t.Fatalf("pip.conf missing %q:\n%s", want, enabledPipConf)
 		}
 	}
-	uvConfig := readFile(t, filepath.Join(configHome, "uv", "uv.toml"))
+	uvConfigPath, err := userUVConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	uvConfig := readFile(t, uvConfigPath)
 	if !strings.Contains(uvConfig, `index-url = "http://127.0.0.1:4873/simple/"`) {
 		t.Fatalf("global uv.toml was not pointed at proxy:\n%s", uvConfig)
 	}
@@ -218,7 +227,7 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 	if restored := readFile(t, pipConf); restored != originalPipConf {
 		t.Fatalf("pip.conf was not restored\nwant:\n%s\ngot:\n%s", originalPipConf, restored)
 	}
-	if _, err := os.Stat(filepath.Join(configHome, "uv", "uv.toml")); !os.IsNotExist(err) {
+	if _, err := os.Stat(uvConfigPath); !os.IsNotExist(err) {
 		t.Fatalf("global uv.toml should be removed after disable when created by Computer Police: %v", err)
 	}
 }
@@ -229,11 +238,19 @@ func TestDoctorReportsPythonRegistryConfigs(t *testing.T) {
 	project := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("APPDATA", configHome)
+	t.Setenv("LOCALAPPDATA", configHome)
 	t.Chdir(project)
 
 	registry := "http://127.0.0.1:4873/simple/"
-	pipConf := filepath.Join(configHome, "pip", "pip.conf")
-	uvConfig := filepath.Join(configHome, "uv", "uv.toml")
+	pipConf, err := userPipConfPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	uvConfig, err := userUVConfigPath()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for path, content := range map[string]string{
 		pipConf:                                  "[global]\nindex-url = " + registry + "\n",
 		uvConfig:                                 "index-url = \"" + registry + "\"\n",
