@@ -1,0 +1,108 @@
+name: CI/CD Install Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-guard:
+    name: Install guard blocks malware
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPUTER_POLICE_HOME: ${{ runner.temp }}/computer-police-state
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Build release-shaped CLI artifact
+        shell: bash
+        run: |
+          version="v0.0.0-cicd"
+          release_root="$RUNNER_TEMP/computer-police-releases"
+          release_dir="$release_root/$version"
+          mkdir -p "$release_dir"
+
+          DIST_DIR="$release_dir" VERSION="$version" ./scripts/release/build_cli_artifacts.sh
+
+          {
+            echo "COMPUTER_POLICE_CICD_VERSION=$version"
+            echo "COMPUTER_POLICE_RELEASE_BASE_URL=file://$release_root"
+          } >> "$GITHUB_ENV"
+
+      - name: Install Computer Police like a CI user
+        shell: bash
+        run: |
+          ./scripts/install.sh --version "$COMPUTER_POLICE_CICD_VERSION"
+
+      - name: Verify installer exposed CLI on PATH
+        shell: bash
+        run: |
+          installed_version="$(computer-police --version)"
+          if [[ "$installed_version" != "$COMPUTER_POLICE_CICD_VERSION" ]]; then
+            echo "installed version = $installed_version, want $COMPUTER_POLICE_CICD_VERSION" >&2
+            exit 1
+          fi
+
+      - name: Enable supply-chain protection
+        shell: bash
+        env:
+          COMPUTER_POLICE_OSV_ADVISORY_DIR: ${{ github.workspace }}/internal/proxy/testdata/osv
+          COMPUTER_POLICE_OSV_SOURCE_URL: "off"
+        run: |
+          computer-police install
+          computer-police doctor
+
+      - name: Assert a malicious npm install is blocked
+        shell: bash
+        run: |
+          workdir="$(mktemp -d "$RUNNER_TEMP/computer-police-cicd.XXXXXX")"
+          cache_dir="$RUNNER_TEMP/computer-police-npm-cache"
+
+          cd "$workdir"
+          set +e
+          output="$(
+            npm install left-pad \
+              --ignore-scripts \
+              --no-audit \
+              --no-fund \
+              --cache "$cache_dir" \
+              2>&1
+          )"
+          status=$?
+          set -e
+
+          printf '%s\n' "$output"
+
+          if [[ $status -eq 0 ]]; then
+            echo "Expected Computer Police to block left-pad, but npm install succeeded." >&2
+            exit 1
+          fi
+
+          if [[ "$output" != *"403"* && "$output" != *"blocked by Computer Police"* ]]; then
+            echo "npm failed, but not with evidence of a Computer Police registry block." >&2
+            exit 1
+          fi
+
+          computer-police ledger list --limit 5
+
+      - name: Disable supply-chain protection
+        if: always()
+        shell: bash
+        run: |
+          if command -v computer-police >/dev/null 2>&1; then
+            computer-police uninstall || true
+          fi
