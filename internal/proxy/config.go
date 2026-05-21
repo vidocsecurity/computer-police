@@ -127,7 +127,85 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 			})
 		}
 	}
+	pipDetected := pipAvailable()
+	pipxDetected := executableExists("pipx")
+	if global && (pipDetected || pipxDetected) {
+		paths, err := userPipConfTargetPaths()
+		if err != nil {
+			return nil, err
+		}
+		name := "pip"
+		if pipDetected && pipxDetected {
+			name = "pip/pipx"
+		} else if !pipDetected {
+			name = "pipx"
+		}
+		for _, path := range paths {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    name,
+				Path:    path,
+				Enable:  func(registry string) error { return setPipConf(path, pypiSimpleRegistry(registry)) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
+	if executableExists("uv") {
+		paths := []string{filepath.Join(projectDir, "uv.toml")}
+		if global {
+			uvPaths, err := userUVConfigPaths()
+			if err != nil {
+				return nil, err
+			}
+			paths = uvPaths
+		} else {
+			paths = append(paths, nestedConfigPaths(projectDir, "uv.toml")...)
+		}
+		for _, path := range uniquePaths(paths) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "uv",
+				Path:    path,
+				Enable:  func(registry string) error { return setUVConfig(path, pypiSimpleRegistry(registry)) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
+	if !global && executableExists("poetry") {
+		for _, path := range pythonProjectConfigPaths(projectDir) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "poetry",
+				Path:    path,
+				Enable:  func(registry string) error { return setPoetrySource(path, pypiSimpleRegistry(registry)) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
+	if !global && executableExists("pdm") {
+		for _, path := range pythonProjectConfigPaths(projectDir) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "pdm",
+				Path:    path,
+				Enable:  func(registry string) error { return setPDMSource(path, pypiSimpleRegistry(registry)) },
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
 	return managers, nil
+}
+
+func pythonProjectConfigPaths(projectDir string) []string {
+	paths := []string{}
+	root := filepath.Join(projectDir, "pyproject.toml")
+	if _, err := os.Stat(root); err == nil {
+		paths = append(paths, root)
+	}
+	for _, path := range nestedConfigPaths(projectDir, "pyproject.toml") {
+		paths = append(paths, path)
+	}
+	return uniquePaths(paths)
 }
 
 func detectedRestorableManagers(global bool, projectDir string) ([]packageManagerConfig, error) {
@@ -168,6 +246,50 @@ func detectedRestorableManagers(global bool, projectDir string) ([]packageManage
 			Path:    path,
 			Disable: func() error { return restoreFile(path) },
 		})
+	}
+	if global {
+		pipPaths, err := userPipConfTargetPaths()
+		if err != nil {
+			return nil, err
+		}
+		for _, path := range pipPaths {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "pip/pipx",
+				Path:    path,
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
+	}
+
+	uvPaths := []string{filepath.Join(projectDir, "uv.toml")}
+	if global {
+		var err error
+		uvPaths, err = userUVConfigPaths()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		uvPaths = append(uvPaths, nestedConfigPaths(projectDir, "uv.toml")...)
+	}
+	for _, path := range uniquePaths(uvPaths) {
+		path := path
+		managers = append(managers, packageManagerConfig{
+			Name:    "uv",
+			Path:    path,
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+
+	if !global {
+		for _, path := range pythonProjectConfigPaths(projectDir) {
+			path := path
+			managers = append(managers, packageManagerConfig{
+				Name:    "pyproject",
+				Path:    path,
+				Disable: func() error { return restoreFile(path) },
+			})
+		}
 	}
 	return managers, nil
 }
@@ -224,6 +346,13 @@ func executableExists(name string) bool {
 func bunAvailable() bool {
 	_, ok := resolveExecutable("bun", bunExecutableFallbacks()...)
 	return ok
+}
+
+func pipAvailable() bool {
+	if executableExists("pip") || executableExists("pip3") {
+		return true
+	}
+	return executableExists("python") || executableExists("python3")
 }
 
 func resolveExecutable(name string, fallbackPaths ...string) (string, bool) {
@@ -350,6 +479,231 @@ func setBunfig(path, registry string) error {
 	return os.WriteFile(path, []byte(strings.Join(nonEmptyTrailing(lines), "\n")+"\n"), 0o644)
 }
 
+func setPipConf(path, registry string) error {
+	content, existed, err := readExisting(path)
+	if err != nil {
+		return err
+	}
+	if err := backupOriginal(path, content, existed); err != nil {
+		return err
+	}
+	lines := setINISectionKeys(splitLines(content), "global", map[string]string{
+		"index-url":       registry,
+		"extra-index-url": registry,
+		"trusted-host":    proxyHost(registry),
+	})
+	return writeConfigFile(path, strings.Join(nonEmptyTrailing(lines), "\n")+"\n")
+}
+
+func setUVConfig(path, registry string) error {
+	content, existed, err := readExisting(path)
+	if err != nil {
+		return err
+	}
+	if err := backupOriginal(path, content, existed); err != nil {
+		return err
+	}
+	lines := setTopLevelTOMLKeys(splitLines(content), map[string]string{
+		"index-url":           fmt.Sprintf("%q", registry),
+		"allow-insecure-host": fmt.Sprintf("[%q]", proxyHost(registry)),
+	})
+	return writeConfigFile(path, strings.Join(nonEmptyTrailing(lines), "\n")+"\n")
+}
+
+func setPoetrySource(path, registry string) error {
+	return appendPyProjectSource(path, "tool.poetry.source", []string{
+		`name = "computer-police"`,
+		fmt.Sprintf("url = %q", registry),
+		`priority = "primary"`,
+	})
+}
+
+func setPDMSource(path, registry string) error {
+	return appendPyProjectSource(path, "tool.pdm.source", []string{
+		`name = "computer-police"`,
+		fmt.Sprintf("url = %q", registry),
+		"verify_ssl = false",
+	})
+}
+
+func appendPyProjectSource(path, table string, entry []string) error {
+	content, existed, err := readExisting(path)
+	if err != nil {
+		return err
+	}
+	if err := backupOriginal(path, content, existed); err != nil {
+		return err
+	}
+	lines := removeNamedTOMLArrayTable(splitLines(content), table, "computer-police")
+	header := "[[" + table + "]]"
+	if len(nonEmptyTrailing(lines)) > 0 {
+		lines = append(lines, "")
+	}
+	lines = append(lines, header)
+	lines = append(lines, entry...)
+	return writeConfigFile(path, strings.Join(nonEmptyTrailing(lines), "\n")+"\n")
+}
+
+func removeNamedTOMLArrayTable(lines []string, table, name string) []string {
+	header := "[[" + table + "]]"
+	out := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); {
+		if strings.TrimSpace(lines[i]) != header {
+			out = append(out, lines[i])
+			i++
+			continue
+		}
+		j := i + 1
+		for j < len(lines) {
+			trimmed := strings.TrimSpace(lines[j])
+			if strings.HasPrefix(trimmed, "[") {
+				break
+			}
+			j++
+		}
+		if tomlBlockHasName(lines[i:j], name) {
+			i = j
+			continue
+		}
+		out = append(out, lines[i:j]...)
+		i = j
+	}
+	return out
+}
+
+func tomlBlockHasName(lines []string, name string) bool {
+	want := fmt.Sprintf("%q", name)
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		key, value, ok := strings.Cut(trimmed, "=")
+		if !ok || strings.TrimSpace(key) != "name" {
+			continue
+		}
+		if strings.TrimSpace(value) == want {
+			return true
+		}
+	}
+	return false
+}
+
+func setINISectionKeys(lines []string, section string, keys map[string]string) []string {
+	header := "[" + section + "]"
+	inSection := false
+	sawSection := false
+	seen := map[string]bool{}
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			if inSection {
+				var inserts []string
+				for _, key := range configSortedKeys(keys) {
+					if !seen[key] {
+						inserts = append(inserts, key+" = "+keys[key])
+					}
+				}
+				lines = insertLines(lines, i, inserts)
+				i += len(inserts)
+			}
+			inSection = trimmed == header
+			if inSection {
+				sawSection = true
+			}
+			continue
+		}
+		if !inSection || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, ";") {
+			continue
+		}
+		key, _, ok := strings.Cut(trimmed, "=")
+		if !ok {
+			key, _, ok = strings.Cut(trimmed, ":")
+		}
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		if value, ok := keys[key]; ok {
+			lines[i] = key + " = " + value
+			seen[key] = true
+		}
+	}
+	var inserts []string
+	if !sawSection {
+		if len(nonEmptyTrailing(lines)) > 0 {
+			lines = append(lines, "")
+		}
+		inserts = append(inserts, header)
+	}
+	for _, key := range configSortedKeys(keys) {
+		if !seen[key] {
+			inserts = append(inserts, key+" = "+keys[key])
+		}
+	}
+	return append(lines, inserts...)
+}
+
+func setTopLevelTOMLKeys(lines []string, keys map[string]string) []string {
+	seen := map[string]bool{}
+	insertAt := len(lines)
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") {
+			insertAt = i
+			break
+		}
+		key, _, ok := strings.Cut(trimmed, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		if value, ok := keys[key]; ok {
+			lines[i] = key + " = " + value
+			seen[key] = true
+		}
+	}
+	var inserts []string
+	for _, key := range configSortedKeys(keys) {
+		if !seen[key] {
+			inserts = append(inserts, key+" = "+keys[key])
+		}
+	}
+	return insertLines(lines, insertAt, inserts)
+}
+
+func insertLines(lines []string, index int, inserts []string) []string {
+	if len(inserts) == 0 {
+		return lines
+	}
+	out := make([]string, 0, len(lines)+len(inserts))
+	out = append(out, lines[:index]...)
+	out = append(out, inserts...)
+	out = append(out, lines[index:]...)
+	return out
+}
+
+func configSortedKeys(keys map[string]string) []string {
+	out := make([]string, 0, len(keys))
+	for key := range keys {
+		out = append(out, key)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func pypiSimpleRegistry(registry string) string {
+	return strings.TrimRight(registry, "/") + "/simple/"
+}
+
+func proxyHost(registry string) string {
+	host := strings.TrimPrefix(strings.TrimPrefix(strings.TrimRight(registry, "/"), "http://"), "https://")
+	if before, _, ok := strings.Cut(host, "/"); ok {
+		host = before
+	}
+	if before, _, ok := strings.Cut(host, ":"); ok {
+		return before
+	}
+	return host
+}
+
 func readExisting(path string) (string, bool, error) {
 	data, err := os.ReadFile(path)
 	if err == nil {
@@ -362,6 +716,9 @@ func readExisting(path string) (string, bool, error) {
 }
 
 func backupOriginal(path, content string, existed bool) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 	backup := path + ".computer-police-backup"
 	marker := path + ".computer-police-created"
 	if _, err := os.Stat(backup); err == nil {
@@ -371,6 +728,13 @@ func backupOriginal(path, content string, existed bool) error {
 		return os.WriteFile(backup, []byte(content), 0o644)
 	}
 	return os.WriteFile(marker, []byte("created by Computer Police registry proxy\n"), 0o644)
+}
+
+func writeConfigFile(path, content string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(content), 0o644)
 }
 
 func restoreFile(path string) error {
@@ -440,4 +804,82 @@ func userBunfigPath() (string, error) {
 		return candidates[0], nil
 	}
 	return filepath.Join(home, ".bunfig.toml"), nil
+}
+
+func userPipConfPath() (string, error) {
+	paths, err := userPipConfTargetPaths()
+	if err != nil {
+		return "", err
+	}
+	if len(paths) == 0 {
+		return "", fmt.Errorf("no pip config path available")
+	}
+	return paths[0], nil
+}
+
+func userPipConfTargetPaths() ([]string, error) {
+	paths, err := userPipConfPaths()
+	if err != nil {
+		return nil, err
+	}
+	var existing []string
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			existing = append(existing, path)
+		}
+	}
+	if len(existing) > 0 {
+		return existing, nil
+	}
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("no pip config path available")
+	}
+	return []string{paths[0]}, nil
+}
+
+func userPipConfPaths() ([]string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	name := "pip.conf"
+	if runtime.GOOS == "windows" {
+		name = "pip.ini"
+	}
+	var paths []string
+	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
+		paths = append(paths, filepath.Join(configDir, "pip", name))
+	}
+	paths = append(paths, filepath.Join(home, ".pip", name))
+	return uniquePaths(paths), nil
+}
+
+func userUVConfigPath() (string, error) {
+	paths, err := userUVConfigPaths()
+	if err != nil {
+		return "", err
+	}
+	if len(paths) == 0 {
+		return "", fmt.Errorf("no uv config path available")
+	}
+	return paths[0], nil
+}
+
+func userUVConfigPaths() ([]string, error) {
+	var paths []string
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		paths = append(paths, filepath.Join(xdg, "uv", "uv.toml"))
+	}
+	if configDir, err := os.UserConfigDir(); err == nil && configDir != "" {
+		paths = append(paths, filepath.Join(configDir, "uv", "uv.toml"))
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		if len(paths) > 0 {
+			return uniquePaths(paths), nil
+		}
+		return nil, err
+	}
+	paths = append(paths, filepath.Join(home, ".config", "uv", "uv.toml"))
+	return uniquePaths(paths), nil
 }

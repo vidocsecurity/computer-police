@@ -140,6 +140,27 @@ func Doctor(out io.Writer) error {
 	} else {
 		fmt.Fprintln(out, "• global bun registry configured for proxy: no")
 	}
+	pythonRegistry := pypiSimpleRegistry(registry)
+	if pipConfigs, err := userPipConfTargetPaths(); err == nil && anyConfigured(pipConfigs, pythonRegistry) {
+		fmt.Fprintln(out, "✓ pip.conf configured for proxy")
+	} else {
+		fmt.Fprintln(out, "• pip.conf configured for proxy: no")
+	}
+	if projectConfigured("uv.toml", pythonRegistry) {
+		fmt.Fprintln(out, "✓ uv.toml configured for proxy")
+	} else {
+		fmt.Fprintln(out, "• uv.toml configured for proxy: no")
+	}
+	if uvConfig, err := userUVConfigPath(); err == nil && projectConfigured(uvConfig, pythonRegistry) {
+		fmt.Fprintln(out, "✓ global uv registry configured for proxy")
+	} else {
+		fmt.Fprintln(out, "• global uv registry configured for proxy: no")
+	}
+	if projectConfigured("pyproject.toml", pythonRegistry) {
+		fmt.Fprintln(out, "✓ pyproject.toml Python sources configured for proxy")
+	} else {
+		fmt.Fprintln(out, "• pyproject.toml Python sources configured for proxy: no")
+	}
 	events, err := readLastEvents(5)
 	if err == nil && len(events) > 0 {
 		fmt.Fprintf(out, "✓ recent proxy events: %d shown by `computer-police proxy events`\n", len(events))
@@ -207,6 +228,15 @@ func projectConfigured(name, registry string) bool {
 		return false
 	}
 	return strings.Contains(string(data), registry)
+}
+
+func anyConfigured(paths []string, registry string) bool {
+	for _, path := range paths {
+		if projectConfigured(path, registry) {
+			return true
+		}
+	}
+	return false
 }
 
 func HealthcheckURL() string {
