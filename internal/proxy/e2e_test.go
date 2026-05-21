@@ -139,16 +139,15 @@ func TestE2EYarnBlocksLeftPadFromNestedConfig(t *testing.T) {
 	requireBlockedInstall(t, output, err)
 }
 
-func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
+func TestE2EPipBlocksMalwarePackageFromGlobalConfig(t *testing.T) {
 	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
+	enableGlobalForE2E(t, env, registry)
 
 	output, err := runE2ECommand(t, project, env,
 		python, "-m", "pip", "install", "computer-police-py-test==1.0.0",
-		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
-		"--trusted-host", "127.0.0.1",
 		"--disable-pip-version-check",
 		"--no-cache-dir",
 		"--no-deps",
@@ -156,7 +155,7 @@ func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
-func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
+func TestE2EPipBlocksMalwarePackageFromGlobalConfigInNestedProject(t *testing.T) {
 	python := requirePythonExecutablePath(t)
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
@@ -165,11 +164,10 @@ func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	enableGlobalForE2E(t, env, registry)
 
 	output, err := runE2ECommand(t, nested, env,
 		python, "-m", "pip", "install", "computer-police-py-test==1.0.0",
-		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
-		"--trusted-host", "127.0.0.1",
 		"--disable-pip-version-check",
 		"--no-cache-dir",
 		"--no-deps",
@@ -183,10 +181,10 @@ func TestE2EUvBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
+	enableProjectForE2E(t, project, registry)
 
 	output, err := runE2ECommand(t, project, env,
 		"uv", "pip", "install", "computer-police-py-test==1.0.0",
-		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--python", python,
 		"--no-deps",
 		"--target", filepath.Join(project, "site-packages"))
@@ -203,10 +201,10 @@ func TestE2EUvBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	enableProjectForE2E(t, root, registry)
 
 	output, err := runE2ECommand(t, nested, env,
 		"uv", "pip", "install", "computer-police-py-test==1.0.0",
-		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--python", python,
 		"--no-deps",
 		"--target", filepath.Join(root, "site-packages"))
@@ -218,11 +216,11 @@ func TestE2EPoetryBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
-	writePoetryProject(t, project, registry)
+	writePoetryProject(t, project)
+	enableProjectForE2E(t, project, registry)
 
 	output, err := runE2ECommand(t, project, env,
 		"poetry", "add", "computer-police-py-test==1.0.0",
-		"--source", "computer-police",
 		"--no-interaction",
 		"--no-ansi")
 	requireBlockedPythonInstall(t, output, err, blocked)
@@ -237,11 +235,11 @@ func TestE2EPoetryBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writePoetryProject(t, nested, registry)
+	writePoetryProject(t, nested)
+	enableProjectForE2E(t, root, registry)
 
 	output, err := runE2ECommand(t, nested, env,
 		"poetry", "add", "computer-police-py-test==1.0.0",
-		"--source", "computer-police",
 		"--no-interaction",
 		"--no-ansi")
 	requireBlockedPythonInstall(t, output, err, blocked)
@@ -252,7 +250,8 @@ func TestE2EPDMBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
-	writePDMProject(t, project, registry)
+	writePDMProject(t, project)
+	enableProjectForE2E(t, project, registry)
 
 	output, err := runE2ECommand(t, project, env,
 		"pdm", "add", "computer-police-py-test==1.0.0",
@@ -269,7 +268,8 @@ func TestE2EPDMBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writePDMProject(t, nested, registry)
+	writePDMProject(t, nested)
+	enableProjectForE2E(t, root, registry)
 
 	output, err := runE2ECommand(t, nested, env,
 		"pdm", "add", "computer-police-py-test==1.0.0",
@@ -277,20 +277,20 @@ func TestE2EPDMBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
-func TestE2EPipxBlocksMalwarePackageFromProjectConfig(t *testing.T) {
+func TestE2EPipxBlocksMalwarePackageFromGlobalConfig(t *testing.T) {
 	requireRunnablePackageManager(t, "pipx", "--version")
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
 	project := t.TempDir()
+	enableGlobalForE2E(t, env, registry)
 
 	output, err := runE2ECommand(t, project, env,
 		"pipx", "install", "computer-police-py-test==1.0.0",
-		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--pip-args", "--trusted-host 127.0.0.1 --no-deps --no-cache-dir")
 	requireBlockedPythonInstall(t, output, err, blocked)
 }
 
-func TestE2EPipxBlocksMalwarePackageFromNestedConfig(t *testing.T) {
+func TestE2EPipxBlocksMalwarePackageFromGlobalConfigInNestedProject(t *testing.T) {
 	requireRunnablePackageManager(t, "pipx", "--version")
 	env := e2eEnv(t)
 	registry, blocked := startE2EPyPIProxy(t)
@@ -299,10 +299,10 @@ func TestE2EPipxBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	enableGlobalForE2E(t, env, registry)
 
 	output, err := runE2ECommand(t, nested, env,
 		"pipx", "install", "computer-police-py-test==1.0.0",
-		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--pip-args", "--trusted-host 127.0.0.1 --no-deps --no-cache-dir")
 	requireBlockedPythonInstall(t, output, err, blocked)
 }
@@ -486,9 +486,32 @@ func enableProjectForE2E(t *testing.T, project, registry string) {
 	}
 }
 
-func writePoetryProject(t *testing.T, dir, registry string) {
+func enableGlobalForE2E(t *testing.T, env []string, registry string) {
 	t.Helper()
-	content := fmt.Sprintf(`[tool.poetry]
+	t.Setenv("HOME", envValue(env, "HOME"))
+	t.Setenv("XDG_CONFIG_HOME", envValue(env, "XDG_CONFIG_HOME"))
+	var out bytes.Buffer
+	if err := EnableProject(&out, EnableOptions{
+		RegistryURL: registry,
+		Global:      true,
+	}); err != nil {
+		t.Fatalf("EnableProject failed: %v\n%s", err, out.String())
+	}
+}
+
+func envValue(env []string, key string) string {
+	prefix := key + "="
+	for _, entry := range env {
+		if strings.HasPrefix(entry, prefix) {
+			return strings.TrimPrefix(entry, prefix)
+		}
+	}
+	return ""
+}
+
+func writePoetryProject(t *testing.T, dir string) {
+	t.Helper()
+	content := `[tool.poetry]
 name = "computer-police-e2e"
 version = "0.1.0"
 description = ""
@@ -497,30 +520,20 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-
-[[tool.poetry.source]]
-name = "computer-police"
-url = "%s"
-priority = "primary"
-`, strings.TrimRight(registry, "/")+"/simple/")
+`
 	if err := os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func writePDMProject(t *testing.T, dir, registry string) {
+func writePDMProject(t *testing.T, dir string) {
 	t.Helper()
-	content := fmt.Sprintf(`[project]
+	content := `[project]
 name = "computer-police-e2e"
 version = "0.1.0"
 requires-python = ">=3.9"
 dependencies = []
-
-[[tool.pdm.source]]
-name = "computer-police"
-url = "%s"
-verify_ssl = false
-`, strings.TrimRight(registry, "/")+"/simple/")
+`
 	if err := os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -621,7 +634,7 @@ func requireBlockedPythonInstall(t *testing.T, output string, err error, blocked
 	if blocked != nil && blocked() > 0 {
 		return
 	}
-	if strings.Contains(output, "403") || strings.Contains(output, "No matching distribution found for computer-police-py-test==1.0.0") {
+	if strings.Contains(output, "403") {
 		return
 	}
 	t.Fatalf("install failed without Computer Police block evidence\nerr=%v\n%s", err, output)
