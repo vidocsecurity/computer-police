@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"package-police/internal/paths"
+	"computer-police/internal/paths"
 )
 
 const (

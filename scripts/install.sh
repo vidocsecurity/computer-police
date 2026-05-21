@@ -2,12 +2,12 @@
 set -euo pipefail
 
 APP_NAME="Computer Police"
-CLI_NAME="package-police"
-REPO="${PACKAGE_POLICE_REPO:-vidocsecurity/computer-police}"
-RELEASE_BASE_URL="${PACKAGE_POLICE_RELEASE_BASE_URL:-https://github.com/$REPO/releases/download}"
-GITHUB_API_URL="${PACKAGE_POLICE_GITHUB_API_URL:-https://api.github.com/repos/$REPO/releases/latest}"
-INSTALL_DIR="${PACKAGE_POLICE_INSTALL_DIR:-$HOME/.package-police/bin}"
-APP_DIR="${PACKAGE_POLICE_APP_DIR:-/Applications}"
+CLI_NAME="computer-police"
+REPO="${COMPUTER_POLICE_REPO:-vidocsecurity/computer-police}"
+RELEASE_BASE_URL="${COMPUTER_POLICE_RELEASE_BASE_URL:-https://github.com/$REPO/releases/download}"
+GITHUB_API_URL="${COMPUTER_POLICE_GITHUB_API_URL:-https://api.github.com/repos/$REPO/releases/latest}"
+INSTALL_DIR="${COMPUTER_POLICE_INSTALL_DIR:-$HOME/.computer-police/bin}"
+APP_DIR="${COMPUTER_POLICE_APP_DIR:-/Applications}"
 NO_MODIFY_PATH=false
 REQUESTED_VERSION="${VERSION:-}"
 UNINSTALL=false
@@ -270,7 +270,7 @@ remove_from_path() {
   command_line="$(path_command_for_shell)"
   for candidate in $(shell_config_files); do
     if [ -f "$candidate" ] && [ -w "$candidate" ]; then
-      tmp_file="$(mktemp "${TMPDIR:-/tmp}/package-police-path.XXXXXX")"
+      tmp_file="$(mktemp "${TMPDIR:-/tmp}/computer-police-path.XXXXXX")"
       awk -v cmd="$command_line" '
         $0 == "# Computer Police" { marker = $0; next }
         $0 == cmd {
@@ -343,7 +343,7 @@ install_release() {
     need_cmd unzip
   fi
 
-  tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/package-police-install.XXXXXX")"
+  tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/computer-police-install.XXXXXX")"
   trap 'rm -rf "$tmp_dir"' EXIT
 
   archive_path="$tmp_dir/$artifact"
@@ -402,7 +402,7 @@ uninstall_release() {
   fi
 
   echo "Computer Police has been uninstalled."
-  echo "Local ledger and configuration data in ~/.package-police were left in place."
+  echo "Local ledger and configuration data in ~/.computer-police were left in place."
 }
 
 if [ "$UNINSTALL" = true ]; then

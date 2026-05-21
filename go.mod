@@ -1,3 +1,3 @@
-module package-police
+module computer-police
 
 go 1.24

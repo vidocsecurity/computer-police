@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-pid_file="${PACKAGE_POLICE_HOME:-$HOME/.package-police}/registry-proxy/proxy.pid"
+pid_file="${COMPUTER_POLICE_HOME:-$HOME/.computer-police}/registry-proxy/proxy.pid"
 if [[ ! -f "$pid_file" ]]; then
   echo "No proxy pid file at $pid_file" >&2
   exit 1

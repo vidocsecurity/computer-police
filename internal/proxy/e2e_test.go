@@ -146,7 +146,7 @@ func TestE2EPipBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	project := t.TempDir()
 
 	output, err := runE2ECommand(t, project, env,
-		python, "-m", "pip", "install", "package-police-py-test==1.0.0",
+		python, "-m", "pip", "install", "computer-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--trusted-host", "127.0.0.1",
 		"--disable-pip-version-check",
@@ -167,7 +167,7 @@ func TestE2EPipBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	}
 
 	output, err := runE2ECommand(t, nested, env,
-		python, "-m", "pip", "install", "package-police-py-test==1.0.0",
+		python, "-m", "pip", "install", "computer-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--trusted-host", "127.0.0.1",
 		"--disable-pip-version-check",
@@ -185,7 +185,7 @@ func TestE2EUvBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	project := t.TempDir()
 
 	output, err := runE2ECommand(t, project, env,
-		"uv", "pip", "install", "package-police-py-test==1.0.0",
+		"uv", "pip", "install", "computer-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--python", python,
 		"--no-deps",
@@ -205,7 +205,7 @@ func TestE2EUvBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	}
 
 	output, err := runE2ECommand(t, nested, env,
-		"uv", "pip", "install", "package-police-py-test==1.0.0",
+		"uv", "pip", "install", "computer-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--python", python,
 		"--no-deps",
@@ -221,7 +221,7 @@ func TestE2EPoetryBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	writePoetryProject(t, project, registry)
 
 	output, err := runE2ECommand(t, project, env,
-		"poetry", "add", "package-police-py-test==1.0.0",
+		"poetry", "add", "computer-police-py-test==1.0.0",
 		"--source", "computer-police",
 		"--no-interaction",
 		"--no-ansi")
@@ -240,7 +240,7 @@ func TestE2EPoetryBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	writePoetryProject(t, nested, registry)
 
 	output, err := runE2ECommand(t, nested, env,
-		"poetry", "add", "package-police-py-test==1.0.0",
+		"poetry", "add", "computer-police-py-test==1.0.0",
 		"--source", "computer-police",
 		"--no-interaction",
 		"--no-ansi")
@@ -255,7 +255,7 @@ func TestE2EPDMBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	writePDMProject(t, project, registry)
 
 	output, err := runE2ECommand(t, project, env,
-		"pdm", "add", "package-police-py-test==1.0.0",
+		"pdm", "add", "computer-police-py-test==1.0.0",
 		"--no-sync")
 	requireBlockedPythonInstall(t, output, err, blocked)
 }
@@ -272,7 +272,7 @@ func TestE2EPDMBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	writePDMProject(t, nested, registry)
 
 	output, err := runE2ECommand(t, nested, env,
-		"pdm", "add", "package-police-py-test==1.0.0",
+		"pdm", "add", "computer-police-py-test==1.0.0",
 		"--no-sync")
 	requireBlockedPythonInstall(t, output, err, blocked)
 }
@@ -284,7 +284,7 @@ func TestE2EPipxBlocksMalwarePackageFromProjectConfig(t *testing.T) {
 	project := t.TempDir()
 
 	output, err := runE2ECommand(t, project, env,
-		"pipx", "install", "package-police-py-test==1.0.0",
+		"pipx", "install", "computer-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--pip-args", "--trusted-host 127.0.0.1 --no-deps --no-cache-dir")
 	requireBlockedPythonInstall(t, output, err, blocked)
@@ -301,7 +301,7 @@ func TestE2EPipxBlocksMalwarePackageFromNestedConfig(t *testing.T) {
 	}
 
 	output, err := runE2ECommand(t, nested, env,
-		"pipx", "install", "package-police-py-test==1.0.0",
+		"pipx", "install", "computer-police-py-test==1.0.0",
 		"--index-url", strings.TrimRight(registry, "/")+"/simple/",
 		"--pip-args", "--trusted-host 127.0.0.1 --no-deps --no-cache-dir")
 	requireBlockedPythonInstall(t, output, err, blocked)
@@ -390,13 +390,13 @@ func startE2EPyPIProxy(t *testing.T) (string, func() int64) {
 	t.Helper()
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch strings.TrimRight(r.URL.Path, "/") {
-		case "/simple/package-police-py-test":
+		case "/simple/computer-police-py-test":
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = fmt.Fprintf(w, `<!doctype html>
 <html><body>
-<a href="%s/packages/package_police_py_test-1.0.0-py3-none-any.whl#sha256=0000000000000000000000000000000000000000000000000000000000000000">package_police_py_test-1.0.0-py3-none-any.whl</a>
+<a href="%s/packages/computer_police_py_test-1.0.0-py3-none-any.whl#sha256=0000000000000000000000000000000000000000000000000000000000000000">computer_police_py_test-1.0.0-py3-none-any.whl</a>
 </body></html>`, upstreamBaseURL(r))
-		case "/packages/package_police_py_test-1.0.0-py3-none-any.whl":
+		case "/packages/computer_police_py_test-1.0.0-py3-none-any.whl":
 			w.Header().Set("Content-Type", "application/octet-stream")
 			_, _ = w.Write([]byte("not a real wheel"))
 		default:
@@ -621,7 +621,7 @@ func requireBlockedPythonInstall(t *testing.T, output string, err error, blocked
 	if blocked != nil && blocked() > 0 {
 		return
 	}
-	if strings.Contains(output, "403") || strings.Contains(output, "No matching distribution found for package-police-py-test==1.0.0") {
+	if strings.Contains(output, "403") || strings.Contains(output, "No matching distribution found for computer-police-py-test==1.0.0") {
 		return
 	}
 	t.Fatalf("install failed without Computer Police block evidence\nerr=%v\n%s", err, output)

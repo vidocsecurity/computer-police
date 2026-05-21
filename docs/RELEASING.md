@@ -80,24 +80,24 @@ curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/
 
 The installer detects the user's OS and CPU architecture, downloads the matching GitHub Release artifact, downloads the release checksum file, verifies SHA-256 before extraction, and installs:
 
-- macOS: `Computer Police.app` plus the bundled `package-police` CLI.
-- Linux: the `package-police` CLI.
-- Windows from Git Bash/MSYS/Cygwin: the `package-police.exe` CLI.
+- macOS: `Computer Police.app` plus the bundled `computer-police` CLI.
+- Linux: the `computer-police` CLI.
+- Windows from Git Bash/MSYS/Cygwin: the `computer-police.exe` CLI.
 
-By default the CLI is installed to `~/.package-police/bin`. Use `--install-dir <path>` to choose another location and `--no-modify-path` to skip shell profile edits.
+By default the CLI is installed to `~/.computer-police/bin`. Use `--install-dir <path>` to choose another location and `--no-modify-path` to skip shell profile edits.
 
 ## Updates and Uninstall
 
 Users can update by rerunning the installer or by running:
 
 ```bash
-package-police self update
+computer-police self update
 ```
 
 They can uninstall the public install with:
 
 ```bash
-package-police self uninstall
+computer-police self uninstall
 ```
 
 or:
@@ -106,7 +106,7 @@ or:
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --uninstall
 ```
 
-Uninstall removes the public binary and macOS app bundle, and best-effort disables/stops the local proxy. It intentionally leaves ledger and configuration data in `~/.package-police` for auditability.
+Uninstall removes the public binary and macOS app bundle, and best-effort disables/stops the local proxy. It intentionally leaves ledger and configuration data in `~/.computer-police` for auditability.
 
 ## Installer Smoke Test
 

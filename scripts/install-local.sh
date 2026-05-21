@@ -2,14 +2,14 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-install_dir="${PACKAGE_POLICE_INSTALL_DIR:-${GOBIN:-$HOME/.local/bin}}"
-binary_name="${PACKAGE_POLICE_BINARY_NAME:-package-police}"
+install_dir="${COMPUTER_POLICE_INSTALL_DIR:-${GOBIN:-$HOME/.local/bin}}"
+binary_name="${COMPUTER_POLICE_BINARY_NAME:-computer-police}"
 target="$install_dir/$binary_name"
 
 mkdir -p "$install_dir"
 
 echo "Building Computer Police..."
-(cd "$repo_root" && go build -o "$target" ./cmd/package-police)
+(cd "$repo_root" && go build -o "$target" ./cmd/computer-police)
 chmod 0755 "$target"
 
 echo "Installed $binary_name to $target"

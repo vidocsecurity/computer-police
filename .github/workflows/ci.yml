@@ -71,7 +71,7 @@ jobs:
         run: |
           ext=""
           if [[ "${{ runner.os }}" == "Windows" ]]; then ext=".exe"; fi
-          go build -o "computer-police${ext}" ./cmd/package-police
+          go build -o "computer-police${ext}" ./cmd/computer-police
 
       - name: Run proxy e2e tests
         env:
@@ -102,11 +102,11 @@ jobs:
         run: swift --version
 
       - name: Build Swift package
-        working-directory: desktop/PackagePolice
+        working-directory: desktop/ComputerPolice
         run: swift build
 
       - name: Test Swift package
-        working-directory: desktop/PackagePolice
+        working-directory: desktop/ComputerPolice
         run: swift test
 
       - name: Package macOS app

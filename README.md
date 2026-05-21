@@ -2,14 +2,14 @@
 
 Computer Police is a local package-registry proxy plus a macOS menu-bar frontend.
 
-The proxy records local package install traffic in `~/.package-police/registry-proxy/events.ndjson`, blocks package versions that match current-year OSV `MAL-*` advisories, and exposes read-only JSON endpoints on the same loopback listener:
+The proxy records local package install traffic in `~/.computer-police/registry-proxy/events.ndjson`, blocks package versions that match current-year OSV `MAL-*` advisories, and exposes read-only JSON endpoints on the same loopback listener:
 
 - `GET /api/health`
 - `GET /api/events?limit=50`
 - `GET /api/stats?window=week`
 - `GET /api/advisories`
 
-The macOS app lives in `desktop/PackagePolice`. It acts like a VPN-style control surface for package-install protection: start/stop the proxy, rewrite/repair npm and bun registry config, show status lights, surface weekly install counts, and flag packages that match the bundled mock blocklist.
+The macOS app lives in `desktop/ComputerPolice`. It acts like a VPN-style control surface for package-install protection: start/stop the proxy, rewrite/repair npm and bun registry config, show status lights, surface weekly install counts, and flag packages that match the bundled mock blocklist.
 
 ## Manual App Test
 
@@ -26,18 +26,18 @@ Then click the shield in the macOS menu bar. Useful test helpers:
 ./scripts/uninstall-dev.sh
 ```
 
-See `desktop/PackagePolice/README.md` for the full click-through checklist.
+See `desktop/ComputerPolice/README.md` for the full click-through checklist.
 
 ## CLI
 
 ```bash
-go build -o ~/.local/bin/package-police ./cmd/package-police
-package-police proxy start
-package-police proxy events --limit 20
-package-police proxy stop
+go build -o ~/.local/bin/computer-police ./cmd/computer-police
+computer-police proxy start
+computer-police proxy events --limit 20
+computer-police proxy stop
 ```
 
-Malware advisory data is cached at `~/.package-police/registry-proxy/malware-advisories.json`, refreshed from the OSV npm snapshot every 10 minutes, and synced in the background when the proxy starts. The `/api/advisories` endpoint reports sync state and download progress for the menu bar app. For local testing, set `PACKAGE_POLICE_OSV_ADVISORY_DIR` to a directory of OSV-format JSON advisories; those advisories are layered onto the cache.
+Malware advisory data is cached at `~/.computer-police/registry-proxy/malware-advisories.json`, refreshed from the OSV npm snapshot every 10 minutes, and synced in the background when the proxy starts. The `/api/advisories` endpoint reports sync state and download progress for the menu bar app. For local testing, set `COMPUTER_POLICE_OSV_ADVISORY_DIR` to a directory of OSV-format JSON advisories; those advisories are layered onto the cache.
 
 ## Public Install
 
@@ -45,7 +45,7 @@ Malware advisory data is cached at `~/.package-police/registry-proxy/malware-adv
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
 ```
 
-Use `package-police self update` to update and `package-police self uninstall` to remove the public install. The installer verifies release SHA-256 checksums before extracting artifacts. See `docs/RELEASING.md` for version pinning and platform details.
+Use `computer-police self update` to update and `computer-police self uninstall` to remove the public install. The installer verifies release SHA-256 checksums before extracting artifacts. See `docs/RELEASING.md` for version pinning and platform details.
 
 ## Package Manager Coverage
 

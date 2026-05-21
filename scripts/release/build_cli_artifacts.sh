@@ -19,7 +19,7 @@ mkdir -p "$dist_dir"
 
 for target in "${targets[@]}"; do
   IFS="/" read -r goos goarch label <<<"$target"
-  name="package-police"
+  name="computer-police"
   ext=""
   archive_ext="tar.gz"
   if [[ "$goos" == "windows" ]]; then
@@ -38,7 +38,7 @@ for target in "${targets[@]}"; do
       -trimpath \
       -ldflags "-s -w -X main.version=$version" \
       -o "$binary" \
-      ./cmd/package-police
+      ./cmd/computer-police
   )
 
   archive_base="ComputerPoliceCLI-$version-$label"

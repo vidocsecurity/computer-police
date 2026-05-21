@@ -11,10 +11,10 @@ DerivedData
 
 # Bundles / artifacts
 # Main app bundle (any variation)
-PackagePolice.app/
-PackagePolice *.app/
-PackagePolice*.app/
-PackagePolice.app/
+ComputerPolice.app/
+ComputerPolice *.app/
+ComputerPolice*.app/
+ComputerPolice.app/
 Computer Police.app/
 Computer Police*.app/
 # Release artifacts

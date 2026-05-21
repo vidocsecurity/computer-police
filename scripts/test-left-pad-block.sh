@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-registry="${PACKAGE_POLICE_TEST_REGISTRY:-http://127.0.0.1:4873}"
-workdir="$(mktemp -d "${TMPDIR:-/tmp}/package-police-left-pad.XXXXXX")"
+registry="${COMPUTER_POLICE_TEST_REGISTRY:-http://127.0.0.1:4873}"
+workdir="$(mktemp -d "${TMPDIR:-/tmp}/computer-police-left-pad.XXXXXX")"
 cache_dir="$workdir/bun-cache"
 
 echo "Testing left-pad block through $registry"
@@ -11,7 +11,7 @@ echo "Working directory: $workdir"
 
 if ! curl --noproxy '*' -fsS "$registry/api/advisories" >/dev/null; then
   echo "Proxy is not reachable at $registry." >&2
-  echo "Run ./scripts/dev.sh first, or set PACKAGE_POLICE_TEST_REGISTRY to a running proxy." >&2
+  echo "Run ./scripts/dev.sh first, or set COMPUTER_POLICE_TEST_REGISTRY to a running proxy." >&2
   exit 2
 fi
 

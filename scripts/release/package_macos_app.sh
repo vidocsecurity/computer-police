@@ -4,12 +4,12 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 dist_dir="${DIST_DIR:-$repo_root/dist}"
 version="${VERSION:-dev}"
-app_path="$repo_root/desktop/PackagePolice/Computer Police.app"
+app_path="$repo_root/desktop/ComputerPolice/Computer Police.app"
 zip_path="$dist_dir/ComputerPolice-$version-macos-universal.zip"
 
 mkdir -p "$dist_dir"
 
-"$repo_root/desktop/PackagePolice/Scripts/package_app.sh"
+"$repo_root/desktop/ComputerPolice/Scripts/package_app.sh"
 
 if [[ ! -d "$app_path" ]]; then
   echo "Missing built app bundle: $app_path" >&2
