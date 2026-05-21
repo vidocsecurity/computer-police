@@ -76,6 +76,9 @@ fi
 echo "Building dev app bundle..."
 "$repo_root/desktop/ComputerPolice/Scripts/package_app.sh"
 
+echo "Installing current CLI to PATH..."
+"$repo_root/scripts/install-local.sh"
+
 echo "Installing app to $app_path..."
 mkdir -p "$app_dir"
 rm -rf "$app_path"
