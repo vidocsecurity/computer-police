@@ -304,8 +304,11 @@ install_cli_from_dir() {
     exit 1
   fi
   mkdir -p "$INSTALL_DIR"
-  cp "$source_bin" "$INSTALL_DIR/$CLI_NAME$ext"
-  chmod 0755 "$INSTALL_DIR/$CLI_NAME$ext"
+  target_bin="$INSTALL_DIR/$CLI_NAME$ext"
+  tmp_bin="$target_bin.tmp.$$"
+  cp "$source_bin" "$tmp_bin"
+  chmod 0755 "$tmp_bin"
+  mv -f "$tmp_bin" "$target_bin"
 }
 
 install_macos_app() {
