@@ -19,7 +19,7 @@ mkdir -p "$dist_dir"
 
 for target in "${targets[@]}"; do
   IFS="/" read -r goos goarch label <<<"$target"
-  name="computer-police"
+  name="package-police"
   ext=""
   archive_ext="tar.gz"
   if [[ "$goos" == "windows" ]]; then

@@ -39,6 +39,14 @@ package-police proxy stop
 
 Malware advisory data is cached at `~/.package-police/registry-proxy/malware-advisories.json`, refreshed from the OSV npm snapshot every 10 minutes, and synced in the background when the proxy starts. The `/api/advisories` endpoint reports sync state and download progress for the menu bar app. For local testing, set `PACKAGE_POLICE_OSV_ADVISORY_DIR` to a directory of OSV-format JSON advisories; those advisories are layered onto the cache.
 
+## Public Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
+```
+
+Use `package-police self update` to update and `package-police self uninstall` to remove the public install. The installer verifies release SHA-256 checksums before extracting artifacts. See `docs/RELEASING.md` for version pinning and platform details.
+
 ## Package Manager Coverage
 
 Status legend:

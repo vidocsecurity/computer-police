@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 
 	"package-police/internal/proxy"
 )
 
-const version = "0.1.0"
+var version = "0.1.0"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -33,6 +36,8 @@ func run(args []string) error {
 		return runInstall(args[1:])
 	case "uninstall":
 		return runUninstall(args[1:])
+	case "self":
+		return runSelf(args[1:])
 	case "proxy":
 		return runProxy(args[1:])
 	case "ledger":
@@ -40,6 +45,80 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
+}
+
+func runSelf(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("self requires update or uninstall")
+	}
+	switch args[0] {
+	case "update":
+		return runPublicInstaller(args[1:])
+	case "uninstall":
+		return runPublicInstaller(append([]string{"--uninstall"}, args[1:]...))
+	default:
+		return fmt.Errorf("unknown self command %q", args[0])
+	}
+}
+
+func runPublicInstaller(args []string) error {
+	script, cleanup, err := publicInstallerScript()
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	cmd := exec.Command("bash", append([]string{script}, args...)...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("public installer failed: %w", err)
+	}
+	return nil
+}
+
+func publicInstallerScript() (string, func(), error) {
+	if script := os.Getenv("PACKAGE_POLICE_INSTALL_SCRIPT"); script != "" {
+		return script, func() {}, nil
+	}
+
+	url := os.Getenv("PACKAGE_POLICE_INSTALLER_URL")
+	if url == "" {
+		url = "https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh"
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("download installer: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", func() {}, fmt.Errorf("download installer: %s", resp.Status)
+	}
+
+	file, err := os.CreateTemp("", "package-police-install-*.sh")
+	if err != nil {
+		return "", func() {}, err
+	}
+	cleanup := func() {
+		_ = os.Remove(file.Name())
+	}
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		_ = file.Close()
+		cleanup()
+		return "", func() {}, err
+	}
+	if err := file.Close(); err != nil {
+		cleanup()
+		return "", func() {}, err
+	}
+	if err := os.Chmod(file.Name(), 0o755); err != nil {
+		cleanup()
+		return "", func() {}, err
+	}
+	return file.Name(), cleanup, nil
 }
 
 func runInstall(args []string) error {
@@ -111,6 +190,8 @@ func printHelp() {
 Usage:
   package-police install [--project]
   package-police uninstall [--project]
+  package-police self update [--version v0.1.0]
+  package-police self uninstall
   package-police doctor
   package-police ledger list [--limit N]
   package-police proxy start [--host 127.0.0.1] [--port 4873]
