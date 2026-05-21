@@ -1,0 +1,15 @@
+# Cloudflare Pages / Netlify redirect rules.
+#
+# The site advertises a clean install URL:
+#
+#   curl -fsSL https://computer.police.dev/install | bash
+#
+# Hosts that read this file (Cloudflare Pages, Netlify, Render) will 302
+# /install to the canonical script in the GitHub repository. curl -fsSL
+# follows redirects, so the pipe-to-bash flow lands on the real script.
+#
+# If you self-host or use a host that does not read _redirects, replicate
+# the same behaviour in your reverse proxy or check scripts/install.sh
+# into site/install directly so it is served as a static file.
+
+/install   https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh   302

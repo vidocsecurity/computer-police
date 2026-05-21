@@ -108,7 +108,7 @@ func publicInstallerScript() (string, func(), error) {
 
 	url := os.Getenv("COMPUTER_POLICE_INSTALLER_URL")
 	if url == "" {
-		url = "https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh"
+		url = "https://computer.police.dev/install"
 	}
 
 	resp, err := http.Get(url)

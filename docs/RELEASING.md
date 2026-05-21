@@ -69,14 +69,16 @@ Artifacts are written to `dist/`.
 The public install entrypoint is:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
+curl -fsSL https://computer.police.dev/install | bash
 ```
 
 To pin a version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --version v0.1.0
+curl -fsSL https://computer.police.dev/install | bash -s -- --version v0.1.0
 ```
+
+`computer.police.dev/install` serves the same `scripts/install.sh` from this repo over the project's own subdomain (see `site/README.md` for hosting setup). The raw GitHub URL at `https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh` still works as a fallback if the subdomain is unavailable.
 
 The installer detects the user's OS and CPU architecture, downloads the matching GitHub Release artifact, downloads the release checksum file, verifies SHA-256 before extraction, and installs:
 
@@ -103,7 +105,7 @@ computer-police self uninstall
 or:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --uninstall
+curl -fsSL https://computer.police.dev/install | bash -s -- --uninstall
 ```
 
 Uninstall removes the public binary and macOS app bundle, and best-effort disables/stops the local proxy. It intentionally leaves ledger and configuration data in `~/.computer-police` for auditability.

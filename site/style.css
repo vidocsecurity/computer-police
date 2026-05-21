@@ -1,0 +1,981 @@
+/* Computer Police — landing site
+ *
+ * Light theme by default; dark theme via [data-theme="dark"] on <html>.
+ * No JS frameworks, no Tailwind. Plain CSS custom properties.
+ */
+
+/* ───────────── theme tokens ─────────────
+   Two palettes, both derived from the macOS app's visual identity:
+   - Light = retro print / cream paper, deep brown ink, vintage forest green.
+   - Dark  = CRT phosphor, deep navy slate, lime phosphor green, honey amber.
+   The dark palette is the brand: it's what the menu-bar app shows.
+*/
+
+:root,
+[data-theme="light"] {
+  --bg: #f7f1e1;                /* warm cream paper, like the Mac case */
+  --bg-elev: #ede4ca;            /* deeper card surface */
+  --bg-elev-2: #e0d4b3;          /* panels, table headers */
+  --border: #22180a;             /* deep brown ink — same as the icon outline */
+  --border-soft: #a8916a;
+  --fg: #22180a;
+  --fg-muted: #5a4530;
+  --fg-dim: #8c785a;
+  --accent: #1c6b39;             /* vintage forest green */
+  --accent-soft-bg: rgba(28, 107, 57, 0.10);
+  --accent-soft-border: rgba(28, 107, 57, 0.45);
+  --accent-amber: #a86d0c;
+  --accent-red: #962e2e;
+
+  /* Terminal stays dark on both themes — CRT phosphor look. */
+  --terminal-bg: #0a0c14;
+  --terminal-fg: #d8deef;
+  --terminal-border: #22180a;
+  --terminal-prompt: #5be38a;
+  --terminal-muted: #5d6788;
+  --terminal-ok: #5be38a;
+  --terminal-caught: #f5a623;
+  --terminal-block: #e15050;
+
+  --top-bg: rgba(247, 241, 225, 0.88);
+  --shadow-hero: 6px 6px 0 0 var(--border);
+  --shadow-card: 3px 3px 0 0 var(--border-soft);
+}
+
+[data-theme="dark"] {
+  --bg: #0a0c14;                 /* deep CRT navy, matches the app window */
+  --bg-elev: #11151f;            /* slate panel */
+  --bg-elev-2: #1a2030;          /* lighter slate */
+  --border: #2d3756;
+  --border-soft: #1e2640;
+  --fg: #d8deef;
+  --fg-muted: #8993b3;
+  --fg-dim: #5d6788;
+  --accent: #5be38a;             /* phosphor green, PATROL ACTIVE / OK */
+  --accent-soft-bg: rgba(91, 227, 138, 0.12);
+  --accent-soft-border: rgba(91, 227, 138, 0.40);
+  --accent-amber: #f5a623;       /* CAUGHT badge honey */
+  --accent-red: #e15050;         /* BLOCK badge */
+
+  --terminal-bg: #06080f;
+  --terminal-fg: #d8deef;
+  --terminal-border: #2d3756;
+  --terminal-prompt: #5be38a;
+  --terminal-muted: #5d6788;
+  --terminal-ok: #5be38a;
+  --terminal-caught: #f5a623;
+  --terminal-block: #e15050;
+
+  --top-bg: rgba(10, 12, 20, 0.88);
+  --shadow-hero: 6px 6px 0 0 var(--border);
+  --shadow-card: none;
+}
+
+:root {
+  --max: 1080px;
+  --max-narrow: 720px;
+  --radius: 0;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  color-scheme: light dark;
+}
+
+/* All surfaces are square. No rounded corners anywhere — the brand is
+   industrial / police-procedural, not consumer-app. */
+*,
+*::before,
+*::after {
+  border-radius: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+a:hover {
+  border-bottom-color: var(--accent);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  color: var(--fg);
+  background: var(--bg-elev-2);
+  padding: 0.08em 0.32em;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-soft);
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 0;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ───────────── top ───────────── */
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--top-bg);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--border-soft);
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.top-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fg);
+  border-bottom: 0;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.brand-mark-svg {
+  display: block;
+}
+
+.brand-name {
+  font-size: 0.85rem;
+}
+
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-nav {
+  display: flex;
+  gap: 22px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.top-nav a {
+  color: var(--fg-muted);
+  border-bottom: 0;
+  letter-spacing: 0.04em;
+}
+
+.top-nav a:hover {
+  color: var(--accent);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
+  padding: 0;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-toggle svg {
+  display: block;
+}
+
+/* Show sun when in dark theme (clicking switches to light); moon when in light. */
+[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+/* ───────────── hero ───────────── */
+
+.hero {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 72px 24px 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.eyebrow,
+.section-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: var(--sans);
+  font-size: clamp(2.1rem, 4vw, 3.1rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 0 0 18px;
+  color: var(--fg);
+}
+
+.lede {
+  font-size: 1.08rem;
+  color: var(--fg-muted);
+  max-width: 36rem;
+  margin: 0 0 24px;
+}
+
+.meta {
+  margin-top: 16px;
+  color: var(--fg-dim);
+  font-size: 0.86rem;
+  font-family: var(--mono);
+}
+
+.meta a {
+  color: var(--fg-muted);
+}
+
+.hero-art img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-hero);
+}
+
+/* ───────────── install block ───────────── */
+
+.install-block {
+  position: relative;
+  margin-top: 8px;
+}
+
+.install-block pre {
+  padding-right: 88px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+  z-index: 2;
+}
+
+.copy-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.copy-btn[data-copied="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ───────────── install tabs ─────────────
+   A small folder-tab strip above the install snippet. The active tab shares
+   its bottom edge with the panel below (no border between them) — the classic
+   physical-tab look, with sharp corners to match the rest of the site.
+*/
+
+.install-tabs {
+  margin-top: 8px;
+}
+
+.install-tab-strip {
+  display: flex;
+  gap: 0;
+  margin-bottom: -1px;            /* overlap the panel's top border by 1px */
+  position: relative;
+  z-index: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.install-tab-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.install-tab {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-bottom-color: var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 120ms ease, background-color 120ms ease,
+              border-color 120ms ease;
+}
+
+.install-tab + .install-tab {
+  border-left-width: 0;            /* tabs share their vertical seams */
+}
+
+.install-tab:hover {
+  color: var(--fg);
+  background: var(--bg-elev);
+}
+
+.install-tab.is-active {
+  color: var(--accent);
+  background: var(--bg-elev);
+  border-color: var(--border);
+  border-bottom-color: var(--bg-elev); /* visually merge with panel */
+  font-weight: 700;
+}
+
+.install-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 2;
+}
+
+.install-panels {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+
+.install-panel pre {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  padding: 14px 88px 14px 16px;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.install-panel[hidden] {
+  display: none;
+}
+
+/* ───────────── flow diagram ─────────────
+   Vertical block flow modeled after Claw Patrol's FlowDiagram. Top: the
+   upstream registries. Middle: Computer Police with three operation tags.
+   Bottom: agents and your shell. Tiny SVG up-arrows act as risers between
+   rows. All surfaces are 1px-bordered rectangles.
+*/
+
+.diagram {
+  max-width: var(--max);
+  margin: 48px auto 16px;
+  padding: 0 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.diagram-stack {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  user-select: none;
+}
+
+.node {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  text-align: center;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.node-registry {
+  background: var(--bg-elev);
+}
+
+.node-title {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  line-height: 1;
+}
+
+.node-sub {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.node-center {
+  background: var(--accent-soft-bg);
+  border-color: var(--accent-soft-border);
+  padding: 22px 20px 18px;
+}
+
+.node-center-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  color: var(--fg);
+  margin-bottom: 14px;
+}
+
+.node-center-header img {
+  display: block;
+}
+
+.op-tag {
+  display: block;
+  margin: 6px auto;
+  max-width: 360px;
+  padding: 6px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+.op-tag-final {
+  color: var(--fg);
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft-bg);
+}
+
+.riser {
+  display: flex;
+  justify-content: center;
+  color: var(--fg-dim);
+}
+
+.riser-single {
+  padding: 4px 0;
+}
+
+.riser-multi {
+  padding: 0;
+}
+
+.agent-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.agent-card {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 14px 8px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  /* Stacked-card shadow effect, à la Claw Patrol: two offset copies
+     behind the real card, each painted as bg + 1px border. Hints at
+     "many of these", not just the four named. */
+  box-shadow:
+    3px 3px 0 0 var(--bg),
+    3px 3px 0 1px var(--border),
+    7px 7px 0 0 var(--bg),
+    7px 7px 0 1px var(--border);
+  margin-right: 7px;
+  margin-bottom: 7px;
+}
+
+.agent-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--fg-muted);
+}
+
+.agent-name {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.diagram-caption {
+  margin-top: 28px;
+  padding: 0 8px;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  text-align: center;
+  line-height: 1.55;
+}
+
+.diagram-caption code {
+  font-size: 0.85em;
+}
+
+/* ───────────── sections ───────────── */
+
+.section {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 72px 24px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.section.narrow {
+  max-width: var(--max-narrow);
+}
+
+h2 {
+  font-family: var(--sans);
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  margin: 0 0 40px;
+  color: var(--fg);
+}
+
+h3 {
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+
+p {
+  color: var(--fg-muted);
+  margin: 0 0 14px;
+}
+
+/* ───────────── problem cards ───────────── */
+
+.cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.cards li {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 22px 18px;
+  position: relative;
+  box-shadow: var(--shadow-card);
+}
+
+.card-num {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent-amber);
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+.cards h3 {
+  font-size: 1.02rem;
+  margin-bottom: 10px;
+}
+
+.cards p {
+  font-size: 0.94rem;
+  margin: 0;
+}
+
+/* ───────────── persona grid ───────────── */
+
+.persona-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.persona-grid article {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+
+.persona-grid h3 {
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.persona-grid p {
+  font-size: 0.94rem;
+  margin: 0;
+}
+
+/* ───────────── how it works steps ───────────── */
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 28px;
+}
+
+.steps li {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.steps h3 {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.steps p {
+  margin-bottom: 14px;
+}
+
+.steps pre {
+  margin: 0;
+}
+
+/* Terminal block — stays dark on both light and dark themes. */
+.terminal {
+  background: var(--terminal-bg) !important;
+  border-color: var(--terminal-border) !important;
+  color: var(--terminal-fg) !important;
+}
+
+.terminal code {
+  color: var(--terminal-fg);
+}
+
+.terminal .prompt {
+  color: var(--terminal-prompt);
+}
+
+.terminal .muted {
+  color: var(--terminal-muted);
+}
+
+.terminal .ok {
+  color: var(--terminal-ok);
+}
+
+.terminal .caught {
+  color: var(--terminal-caught);
+  font-weight: 600;
+}
+
+.terminal .block {
+  color: var(--terminal-block);
+  font-weight: 600;
+}
+
+/* ───────────── notlist ───────────── */
+
+.notlist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 24px;
+}
+
+.notlist li {
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  color: var(--fg);
+  padding: 10px 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.notlist li span {
+  color: var(--accent-red);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.callout {
+  background: var(--accent-soft-bg);
+  border-left: 3px solid var(--accent);
+  padding: 16px 18px;
+  margin-top: 8px;
+  color: var(--fg);
+  border-radius: var(--radius);
+}
+
+/* ───────────── chips ───────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.chip {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+}
+
+/* ───────────── coverage table ───────────── */
+
+.coverage {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.coverage th,
+.coverage td {
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.coverage th {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.coverage td {
+  color: var(--fg-muted);
+}
+
+.status {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: var(--radius);
+  border: 1px solid;
+}
+
+.status-supported {
+  color: var(--accent);
+  border-color: var(--accent-soft-border);
+  background: var(--accent-soft-bg);
+}
+
+.status-planned {
+  color: var(--fg-dim);
+  border-color: var(--border);
+  background: transparent;
+}
+
+/* ───────────── cta ───────────── */
+
+.cta {
+  max-width: var(--max-narrow);
+  margin: 0 auto;
+  padding: 96px 24px 72px;
+  text-align: center;
+  border-top: 1px solid var(--border-soft);
+}
+
+.cta h2 {
+  margin-bottom: 14px;
+}
+
+.cta p {
+  margin-bottom: 28px;
+}
+
+.cta .install-block,
+.cta .install-tabs {
+  text-align: left;
+}
+
+.cta-links {
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  color: var(--fg-dim);
+}
+
+.cta-links a {
+  color: var(--fg-muted);
+  border-bottom: 0;
+}
+
+.cta-links a:hover {
+  color: var(--accent);
+}
+
+/* ───────────── footer ───────────── */
+
+footer {
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg);
+}
+
+.footer-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 28px 24px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+}
+
+.footer-inner a {
+  color: var(--fg-muted);
+}
+
+/* ───────────── responsive ───────────── */
+
+@media (max-width: 880px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-top: 48px;
+  }
+
+  .hero-art {
+    order: 2;
+  }
+
+  .top-nav {
+    display: none;
+  }
+
+  .cards,
+  .persona-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .notlist {
+    grid-template-columns: 1fr;
+  }
+
+  .ascii {
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 56px 20px;
+  }
+
+  .hero {
+    padding: 40px 20px 24px;
+  }
+
+  pre {
+    font-size: 0.78rem;
+  }
+}

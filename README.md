@@ -33,13 +33,13 @@ Computer Police is safe to try: it runs locally, needs no root, and can be fully
 One-liner for macOS, Linux, and Windows via WSL or Git Bash:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
+curl -fsSL https://computer.police.dev/install | bash
 ```
 
 Pin a version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash -s -- --version v0.1.0
+curl -fsSL https://computer.police.dev/install | bash -s -- --version v0.1.0
 ```
 
 Update or remove:
@@ -106,7 +106,7 @@ Computer Police is designed to work the same way in a CI runner, a devcontainer,
 ```yaml
 - name: Install Computer Police
   run: |
-    curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
+    curl -fsSL https://computer.police.dev/install | bash
     echo "$HOME/.computer-police/bin" >> "$GITHUB_PATH"
 
 - name: Enable supply-chain protection
