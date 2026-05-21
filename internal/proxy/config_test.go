@@ -193,8 +193,8 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("EnableProject failed: %v\n%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "configured pipx registry=") {
-		t.Fatalf("pipx manager was not detected:\n%s", out.String())
+	if !strings.Contains(out.String(), "configured pip/pipx registry=") {
+		t.Fatalf("shared pip/pipx manager was not detected:\n%s", out.String())
 	}
 
 	enabledPipConf := readFile(t, pipConf)
@@ -229,6 +229,91 @@ func TestEnableDisableGlobalRestoresPythonUserConfigs(t *testing.T) {
 	}
 	if _, err := os.Stat(uvConfigPath); !os.IsNotExist(err) {
 		t.Fatalf("global uv.toml should be removed after disable when created by Computer Police: %v", err)
+	}
+}
+
+func TestEnableDisableGlobalRemovesSharedPipConfigWhenCreated(t *testing.T) {
+	home := t.TempDir()
+	configHome := filepath.Join(home, ".config")
+	fakeBin := t.TempDir()
+	t.Setenv("PATH", fakeBin)
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("APPDATA", configHome)
+	t.Setenv("LOCALAPPDATA", configHome)
+	writeFakeExecutable(t, fakeBin, "pip")
+	writeFakeExecutable(t, fakeBin, "pipx")
+
+	pipConf, err := userPipConfPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := EnableProject(&out, EnableOptions{
+		ProjectDir:  t.TempDir(),
+		RegistryURL: "http://127.0.0.1:4873/",
+		Global:      true,
+	}); err != nil {
+		t.Fatalf("EnableProject failed: %v\n%s", err, out.String())
+	}
+	if _, err := os.Stat(pipConf); err != nil {
+		t.Fatalf("pip config was not created: %v", err)
+	}
+
+	out.Reset()
+	if err := DisableProject(&out, DisableOptions{
+		ProjectDir: t.TempDir(),
+		Global:     true,
+	}); err != nil {
+		t.Fatalf("DisableProject failed: %v\n%s", err, out.String())
+	}
+
+	if _, err := os.Stat(pipConf); !os.IsNotExist(err) {
+		t.Fatalf("pip config should be removed after disable when created by Computer Police: %v\n%s", err, readFile(t, pipConf))
+	}
+	if _, err := os.Stat(pipConf + ".computer-police-backup"); !os.IsNotExist(err) {
+		t.Fatalf("pip config backup should not remain: %v", err)
+	}
+	if _, err := os.Stat(pipConf + ".computer-police-created"); !os.IsNotExist(err) {
+		t.Fatalf("pip config creation marker should not remain: %v", err)
+	}
+}
+
+func TestEnableGlobalDoesNotModifyPoetryOrPDMProjectConfigs(t *testing.T) {
+	project := t.TempDir()
+	home := t.TempDir()
+	configHome := filepath.Join(home, ".config")
+	fakeBin := t.TempDir()
+	t.Setenv("PATH", fakeBin)
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", configHome)
+	t.Setenv("APPDATA", configHome)
+	t.Setenv("LOCALAPPDATA", configHome)
+	writeFakeExecutable(t, fakeBin, "pip")
+	writeFakeExecutable(t, fakeBin, "poetry")
+	writeFakeExecutable(t, fakeBin, "pdm")
+
+	pyproject := filepath.Join(project, "pyproject.toml")
+	originalPyproject := "[project]\nname = \"example\"\nversion = \"0.1.0\"\n"
+	if err := os.WriteFile(pyproject, []byte(originalPyproject), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := EnableProject(&out, EnableOptions{
+		ProjectDir:  project,
+		RegistryURL: "http://127.0.0.1:4873/",
+		Global:      true,
+	}); err != nil {
+		t.Fatalf("EnableProject failed: %v\n%s", err, out.String())
+	}
+
+	if got := readFile(t, pyproject); got != originalPyproject {
+		t.Fatalf("global enable should not modify pyproject.toml\nwant:\n%s\ngot:\n%s", originalPyproject, got)
+	}
+	if strings.Contains(out.String(), "configured poetry") || strings.Contains(out.String(), "configured pdm") {
+		t.Fatalf("global enable should not configure project Poetry/PDM sources:\n%s", out.String())
 	}
 }
 

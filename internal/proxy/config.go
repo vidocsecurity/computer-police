@@ -130,13 +130,21 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 			})
 		}
 	}
-	if global && pipAvailable() {
+	pipDetected := pipAvailable()
+	pipxDetected := executableExists("pipx")
+	if global && (pipDetected || pipxDetected) {
 		path, err := userPipConfPath()
 		if err != nil {
 			return nil, err
 		}
+		name := "pip"
+		if pipDetected && pipxDetected {
+			name = "pip/pipx"
+		} else if !pipDetected {
+			name = "pipx"
+		}
 		managers = append(managers, packageManagerConfig{
-			Name:    "pip",
+			Name:    name,
 			Path:    path,
 			Enable:  func(registry string) error { return setPipConf(path, pypiSimpleRegistry(registry)) },
 			Disable: func() error { return restoreFile(path) },
@@ -163,7 +171,7 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 			})
 		}
 	}
-	if executableExists("poetry") {
+	if !global && executableExists("poetry") {
 		for _, path := range pythonProjectConfigPaths(projectDir) {
 			path := path
 			managers = append(managers, packageManagerConfig{
@@ -174,7 +182,7 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 			})
 		}
 	}
-	if executableExists("pdm") {
+	if !global && executableExists("pdm") {
 		for _, path := range pythonProjectConfigPaths(projectDir) {
 			path := path
 			managers = append(managers, packageManagerConfig{
@@ -184,18 +192,6 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 				Disable: func() error { return restoreFile(path) },
 			})
 		}
-	}
-	if global && executableExists("pipx") {
-		path, err := userPipConfPath()
-		if err != nil {
-			return nil, err
-		}
-		managers = append(managers, packageManagerConfig{
-			Name:    "pipx",
-			Path:    path,
-			Enable:  func(registry string) error { return setPipConf(path, pypiSimpleRegistry(registry)) },
-			Disable: func() error { return restoreFile(path) },
-		})
 	}
 	return managers, nil
 }
