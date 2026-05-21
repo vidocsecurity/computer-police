@@ -146,3 +146,89 @@ Open questions:
 - How should we map npm, pnpm, yarn, and bun lockfile entries into OSV ecosystems and purls?
 - How do we distinguish malicious-package advisories from normal vulnerabilities in the UI and reports?
 - Should OSV checks block installs, warn only, or be policy-controlled?
+
+## 5. Agent-Installable Skills
+
+Ship Computer Police as a set of skills that coding agents (Claude Code,
+Codex, Cursor, OpenCode, custom harnesses) can install into a project on
+the user's behalf. The agent should be able to pick a skill, run it, and
+end up with a more defensible repo without the user having to read our
+docs.
+
+Two skills to start. Both are agent-friendly wrappers around the same
+underlying capabilities discussed in §1 (`harden`) and the existing CLI:
+
+### 5a. Skill: Harden Repository
+
+A skill the agent runs on a repository to apply obvious, low-risk
+supply-chain hardening. The point is that the agent has a single thing to
+invoke and gets a sensible default, not a 20-step manual checklist.
+
+Default behavior (no flags):
+
+- Pin direct dependencies to exact versions in the lockfile-bearing
+  manifests (`package.json`, `pyproject.toml`, etc.).
+- Refresh / regenerate the lockfile and verify integrity hashes are
+  present.
+- Disable lifecycle scripts for risky flows (npm `ignore-scripts` in CI,
+  uv `--no-build-isolation` posture where appropriate, etc.).
+- Add a minimum-package-age policy file and wire the proxy to enforce it
+  at install time.
+- Generate or update agent instruction files (`AGENTS.md`, `CLAUDE.md`,
+  Cursor rules) so future agent runs know the project is hardened and how
+  to add dependencies safely.
+- Emit a human-readable hardening report plus a machine-readable JSON one
+  for the agent to summarize.
+
+Reuses `computer-police harden` from §1. The skill is the contract the
+agent calls; `harden` is the implementation.
+
+### 5b. Skill: Add Computer Police to CI/CD
+
+A skill the agent runs to put Computer Police in front of every package
+install that happens in CI. By default it targets GitHub Actions because
+that is the most common case, but the skill should be structured so other
+CI providers can be added without rewriting it.
+
+Default behavior on a GitHub repo:
+
+- Detect existing workflows in `.github/workflows/`.
+- For each workflow that runs `npm`, `pnpm`, `yarn`, `bun`, `pip`, `uv`,
+  `poetry`, `pdm`, `pipx` (or future supported managers), inject an
+  "Install Computer Police" step before the first install step and an
+  "Enable supply-chain protection" step right after it.
+- Optionally upload the install ledger as a build artifact on failure.
+- Skip workflows that already include the Computer Police steps (idempotent).
+- Open a PR with the changes plus a short rationale comment, instead of
+  pushing directly.
+
+Should also detect and refuse to touch:
+
+- Forks / read-only checkouts.
+- Workflows that explicitly opt out via a marker comment.
+- Non-GitHub CI configs in the initial version (warn and exit cleanly so
+  the agent can report "GitLab/CircleCI not yet supported" cleanly).
+
+Possible product shape:
+
+- A skill package the agent installs (`computer-police skills install
+  harden-repo` / `add-ci`) that registers it with the local skills index.
+- Underlying CLI: `computer-police harden` (§1) plus a new
+  `computer-police ci install --provider github` that does the workflow
+  edits and is what the CI skill wraps.
+- Each skill ships with a one-paragraph description, a sample agent
+  prompt, and a dry-run mode.
+
+Open questions:
+
+- Should skills be distributed inside the Computer Police binary, as a
+  separate `~/.computer-police/skills/` directory the installer drops, or
+  pulled from a remote skills registry?
+- How do we present the diff the skill is about to apply so the user can
+  approve before the agent commits?
+- Should "Add Computer Police to CI" require the user to also have signed
+  off on the public installer running inside their CI runner, or is the
+  proxy-only step enough?
+- How do we handle monorepos with many workflows and many package
+  managers — one PR per workflow, one combined PR, or interactive?
+- What is the right rollback path if a hardened lockfile breaks a build?
