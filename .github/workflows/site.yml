@@ -1,0 +1,65 @@
+name: Deploy site
+
+# Publishes the static landing page in `site/` to GitHub Pages and serves the
+# install script at the clean URL `https://computer.police.dev/install`. The
+# install script is copied verbatim from `scripts/install.sh` at build time so
+# there is a single source of truth (the script in the repo) and no redirect
+# hop on the public install one-liner.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/install.sh"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage site
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cp -R site/. _site/
+          # Serve scripts/install.sh under the clean install URL so
+          # `curl -fsSL https://computer.police.dev/install | bash` lands
+          # directly on the script with no redirect.
+          cp scripts/install.sh _site/install
+          chmod 0644 _site/install
+          # _redirects is for Cloudflare/Netlify hosts. It is harmless on
+          # GitHub Pages (served as a static file under /_redirects) but
+          # not needed; drop it from the Pages build to keep the published
+          # surface minimal.
+          rm -f _site/_redirects
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
