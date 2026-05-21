@@ -69,6 +69,42 @@ func TestEnableDisableProjectRestoresCustomRegistries(t *testing.T) {
 	}
 }
 
+func TestDisableGlobalRestoresBackupsWithoutPackageManagers(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("PATH", t.TempDir())
+
+	npmrc := filepath.Join(home, ".npmrc")
+	originalNPMRC := "registry=https://registry.example.test/npm/\n"
+	if err := os.WriteFile(npmrc, []byte("registry=http://127.0.0.1:4873/\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(npmrc+".computer-police-backup", []byte(originalNPMRC), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	bunfig := filepath.Join(home, ".bunfig.toml")
+	originalBunfig := "[install]\nregistry = \"https://registry.example.test/bun/\"\n"
+	if err := os.WriteFile(bunfig, []byte("[install]\nregistry = \"http://127.0.0.1:4873\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bunfig+".computer-police-backup", []byte(originalBunfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := DisableProject(&out, DisableOptions{Global: true}); err != nil {
+		t.Fatalf("DisableProject failed without package managers on PATH: %v\n%s", err, out.String())
+	}
+
+	if restored := readFile(t, npmrc); restored != originalNPMRC {
+		t.Fatalf(".npmrc was not restored\nwant:\n%s\ngot:\n%s", originalNPMRC, restored)
+	}
+	if restored := readFile(t, bunfig); restored != originalBunfig {
+		t.Fatalf(".bunfig.toml was not restored\nwant:\n%s\ngot:\n%s", originalBunfig, restored)
+	}
+}
+
 func TestEnableDisableProjectRemovesCreatedRegistryFiles(t *testing.T) {
 	project := t.TempDir()
 	fakeBin := t.TempDir()

@@ -61,12 +61,9 @@ func DisableProject(out io.Writer, opts DisableOptions) error {
 			return err
 		}
 	}
-	managers, err := detectedSupportedManagers(opts.Global, dir)
+	managers, err := detectedRestorableManagers(opts.Global, dir)
 	if err != nil {
 		return err
-	}
-	if len(managers) == 0 {
-		return fmt.Errorf("no supported package managers detected")
 	}
 	for _, manager := range managers {
 		if err := manager.Disable(); err != nil {
@@ -129,6 +126,48 @@ func detectedSupportedManagers(global bool, projectDir string) ([]packageManager
 				Disable: func() error { return restoreFile(path) },
 			})
 		}
+	}
+	return managers, nil
+}
+
+func detectedRestorableManagers(global bool, projectDir string) ([]packageManagerConfig, error) {
+	var managers []packageManagerConfig
+	npmPaths := []string{filepath.Join(projectDir, ".npmrc")}
+	if global {
+		path, err := userNPMRCPath()
+		if err != nil {
+			return nil, err
+		}
+		npmPaths = []string{path}
+	} else {
+		npmPaths = append(npmPaths, nestedConfigPaths(projectDir, ".npmrc")...)
+	}
+	for _, path := range uniquePaths(npmPaths) {
+		path := path
+		managers = append(managers, packageManagerConfig{
+			Name:    "npm",
+			Path:    path,
+			Disable: func() error { return restoreFile(path) },
+		})
+	}
+
+	bunPaths := []string{filepath.Join(projectDir, "bunfig.toml")}
+	if global {
+		path, err := userBunfigPath()
+		if err != nil {
+			return nil, err
+		}
+		bunPaths = []string{path}
+	} else {
+		bunPaths = append(bunPaths, nestedConfigPaths(projectDir, "bunfig.toml")...)
+	}
+	for _, path := range uniquePaths(bunPaths) {
+		path := path
+		managers = append(managers, packageManagerConfig{
+			Name:    "bun",
+			Path:    path,
+			Disable: func() error { return restoreFile(path) },
+		})
 	}
 	return managers, nil
 }
