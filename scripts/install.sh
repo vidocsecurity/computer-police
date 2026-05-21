@@ -9,6 +9,7 @@ GITHUB_API_URL="${COMPUTER_POLICE_GITHUB_API_URL:-https://api.github.com/repos/$
 INSTALL_DIR="${COMPUTER_POLICE_INSTALL_DIR:-$HOME/.computer-police/bin}"
 APP_DIR="${COMPUTER_POLICE_APP_DIR:-/Applications}"
 NO_MODIFY_PATH=false
+NO_LAUNCH=false
 REQUESTED_VERSION="${VERSION:-}"
 UNINSTALL=false
 
@@ -33,6 +34,7 @@ Options:
       --install-dir <path>  Install CLI into this directory
       --app-dir <path>      Install the macOS app into this directory
       --no-modify-path      Do not modify shell profile files
+      --no-launch           Do not launch the macOS app after installation
       --uninstall           Remove the public install
 
 Examples:
@@ -74,6 +76,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --no-modify-path)
       NO_MODIFY_PATH=true
+      shift
+      ;;
+    --no-launch)
+      NO_LAUNCH=true
       shift
       ;;
     --uninstall)
@@ -330,6 +336,26 @@ install_macos_app() {
   cp -R "$app_source" "$target_app_dir/$APP_NAME.app"
   install_cli_from_dir "$target_app_dir/$APP_NAME.app/Contents/Resources/bin"
   echo "Installed $APP_NAME.app to $target_app_dir"
+  installed_app_path="$target_app_dir/$APP_NAME.app"
+}
+
+launch_macos_app() {
+  if [ "$NO_LAUNCH" = true ]; then
+    return
+  fi
+  if [ -z "${installed_app_path:-}" ] || [ ! -d "$installed_app_path" ]; then
+    return
+  fi
+  if ! command -v open >/dev/null 2>&1; then
+    echo "Open $installed_app_path to start Computer Police."
+    return
+  fi
+  if open "$installed_app_path"; then
+    echo "Started $APP_NAME. Look for the shield in the macOS menu bar."
+  else
+    echo "Installed $APP_NAME, but macOS did not launch it automatically."
+    echo "Open $installed_app_path to start protection."
+  fi
 }
 
 install_release() {
@@ -366,6 +392,7 @@ install_release() {
 
   if [ "$os" = "macos" ]; then
     install_macos_app "$extract_dir"
+    launch_macos_app
   else
     install_cli_from_dir "$extract_dir"
   fi

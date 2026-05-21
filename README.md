@@ -81,7 +81,7 @@ The malware advisory cache is refreshed in the background from the public OSV sn
 curl -fsSL https://raw.githubusercontent.com/vidocsecurity/computer-police/main/scripts/install.sh | bash
 ```
 
-The installer detects your OS and architecture, downloads the matching GitHub Release artifact, verifies its SHA-256 checksum, and installs the CLI to `~/.computer-police/bin/computer-police`. On macOS it also installs the `Computer Police.app` menu-bar app to `/Applications`.
+The installer detects your OS and architecture, downloads the matching GitHub Release artifact, verifies its SHA-256 checksum, and installs the CLI to `~/.computer-police/bin/computer-police`. On macOS it also installs `Computer Police.app` to `/Applications` and launches the menu-bar app so protection can auto-enable.
 
 Pin a version:
 
