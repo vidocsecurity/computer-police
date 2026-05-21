@@ -31,6 +31,10 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Resolve version
         id: version
         shell: bash

@@ -24,6 +24,8 @@ The Swift app matrix currently covers:
 
 Some package-manager e2e subtests skip when tools such as Bun, pnpm, uv, conda, or pixi are not installed on the runner.
 
+In CI, proxy e2e tests run with `COMPUTER_POLICE_E2E_STRICT=1`. In strict mode, missing package-manager executables and pending package-manager cases fail the workflow instead of being reported as skipped tests. This is intentional: a green e2e job must mean the required package-manager coverage actually ran.
+
 ## Manual Release
 
 Create a release by pushing a version tag:

@@ -236,11 +236,11 @@ func TestE2EAdditionalPythonPackageManagersPending(t *testing.T) {
 	} {
 		t.Run(tc.name+"/project_config_blocks_malware_package", func(t *testing.T) {
 			requireExecutable(t, tc.executable)
-			t.Skip(tc.reason)
+			pendingE2E(t, tc.reason)
 		})
 		t.Run(tc.name+"/nested_config_blocks_malware_package", func(t *testing.T) {
 			requireExecutable(t, tc.executable)
-			t.Skip(tc.reason)
+			pendingE2E(t, tc.reason)
 		})
 	}
 }
@@ -269,11 +269,11 @@ func TestE2ECondaFamilyPackageManagersPending(t *testing.T) {
 	} {
 		t.Run(tc.name+"/project_config_blocks_malware_package", func(t *testing.T) {
 			requireExecutable(t, tc.executable)
-			t.Skip(tc.reason)
+			pendingE2E(t, tc.reason)
 		})
 		t.Run(tc.name+"/nested_config_blocks_malware_package", func(t *testing.T) {
 			requireExecutable(t, tc.executable)
-			t.Skip(tc.reason)
+			pendingE2E(t, tc.reason)
 		})
 	}
 }
@@ -393,6 +393,9 @@ func enableProjectForE2E(t *testing.T, project, registry string) {
 func requireExecutable(t *testing.T, name string) {
 	t.Helper()
 	if _, err := exec.LookPath(name); err != nil {
+		if strictE2E() {
+			t.Fatalf("%s is required for strict e2e but is not installed", name)
+		}
 		t.Skipf("%s is not installed", name)
 	}
 }
@@ -401,6 +404,9 @@ func requireExecutablePath(t *testing.T, name string) string {
 	t.Helper()
 	path, err := exec.LookPath(name)
 	if err != nil {
+		if strictE2E() {
+			t.Fatalf("%s is required for strict e2e but is not installed", name)
+		}
 		t.Skipf("%s is not installed", name)
 	}
 	return path
@@ -413,6 +419,9 @@ func requirePythonExecutablePath(t *testing.T) string {
 			return path
 		}
 	}
+	if strictE2E() {
+		t.Fatal("python3/python is required for strict e2e but is not installed")
+	}
 	t.Skip("python3/python is not installed")
 	return ""
 }
@@ -423,8 +432,23 @@ func requireRunnablePackageManager(t *testing.T, name string, args ...string) {
 	cmd := exec.Command(name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		if strictE2E() {
+			t.Fatalf("%s is required for strict e2e but is not runnable: %v\n%s", name, err, string(output))
+		}
 		t.Skipf("%s is installed but not runnable: %v\n%s", name, err, string(output))
 	}
+}
+
+func pendingE2E(t *testing.T, reason string) {
+	t.Helper()
+	if strictE2E() {
+		t.Fatalf("strict e2e requires this package-manager case to be implemented: %s", reason)
+	}
+	t.Skip(reason)
+}
+
+func strictE2E() bool {
+	return os.Getenv("COMPUTER_POLICE_E2E_STRICT") == "1"
 }
 
 func runE2ECommand(t *testing.T, dir string, env []string, name string, args ...string) (string, error) {
