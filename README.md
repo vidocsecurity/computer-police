@@ -69,8 +69,11 @@ computer-police ledger list --limit 20
 
 When you're done, `computer-police uninstall` stops the proxy and restores every package-manager config file it changed.
 
-## Why Computer Police
+## Principles
 
+These are the rules we hold ourselves to. Each of them is a deliberate constraint, not an aspiration.
+
+- **Low noise by design.** Computer Police blocks installs of *confirmed* malware only — packages with a public OSV `MAL-*` advisory. It is **not** a vulnerability scanner, **not** a CVE tracker, **not** a license checker, and **not** a heuristic "this package looks suspicious" tool. If it blocks, somebody has confirmed the package is malicious. Zero-day and vulnerability detection are out of scope today, and if we ever add them they will live in a separate, clearly-labelled layer so the malware signal stays clean.
 - **Designed for agents.** Any package manager an agent invokes — `npm`, `pnpm`, `yarn`, `bun`, `pip`, `uv`, `poetry`, `pdm`, `pipx` — is protected automatically as soon as Computer Police is installed. No agent-specific plugin required.
 - **Works anywhere a package manager runs.** Laptops, CI/CD pipelines, ephemeral devcontainers, remote agent sandboxes. One binary, one loopback listener.
 - **Local-first and private by design.** Your install events, package names, and lockfiles never leave your machine. The only outbound network call is fetching the public OSV advisory snapshot.
