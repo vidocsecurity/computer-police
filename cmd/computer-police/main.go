@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 
 	"computer-police/internal/proxy"
@@ -53,12 +54,33 @@ func runSelf(args []string) error {
 	}
 	switch args[0] {
 	case "update":
-		return runPublicInstaller(args[1:])
+		installerArgs, err := argsWithCurrentInstallDir(args[1:])
+		if err != nil {
+			return err
+		}
+		return runPublicInstaller(installerArgs)
 	case "uninstall":
-		return runPublicInstaller(append([]string{"--uninstall"}, args[1:]...))
+		installerArgs, err := argsWithCurrentInstallDir(args[1:])
+		if err != nil {
+			return err
+		}
+		return runPublicInstaller(append([]string{"--uninstall"}, installerArgs...))
 	default:
 		return fmt.Errorf("unknown self command %q", args[0])
 	}
+}
+
+func argsWithCurrentInstallDir(args []string) ([]string, error) {
+	if hasFlag(args, "--install-dir") || os.Getenv("COMPUTER_POLICE_INSTALL_DIR") != "" {
+		return args, nil
+	}
+	executable, err := os.Executable()
+	if err != nil {
+		return nil, fmt.Errorf("resolve current install dir: %w", err)
+	}
+	withInstallDir := append([]string{}, args...)
+	withInstallDir = append(withInstallDir, "--install-dir", filepath.Dir(executable))
+	return withInstallDir, nil
 }
 
 func runPublicInstaller(args []string) error {

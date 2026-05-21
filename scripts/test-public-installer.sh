@@ -10,6 +10,15 @@ release_root="$workdir/releases"
 release_dir="$release_root/$version"
 home_dir="$workdir/home"
 install_dir="$workdir/install/bin"
+host_arch="$(uname -m)"
+case "$host_arch" in
+  x86_64|amd64) artifact_arch="x86_64" ;;
+  arm64|aarch64) artifact_arch="arm64" ;;
+  *)
+    echo "unsupported test architecture: $host_arch" >&2
+    exit 1
+    ;;
+esac
 mkdir -p "$release_dir" "$home_dir"
 touch "$home_dir/.bashrc"
 
@@ -38,26 +47,30 @@ COMPUTER_POLICE_INSTALL_SCRIPT="$repo_root/scripts/install.sh" \
 COMPUTER_POLICE_RELEASE_BASE_URL="file://$release_root" \
 "$install_dir/computer-police" self update \
   --version "$version" \
-  --install-dir "$install_dir" \
   --no-modify-path
+if [ -e "$home_dir/.computer-police/bin/computer-police" ]; then
+  echo "self update wrote to default install dir instead of current install dir" >&2
+  exit 1
+fi
 
 echo "Checking checksum failure path..."
 corrupt_root="$workdir/corrupt-releases"
 corrupt_dir="$corrupt_root/$version"
+corrupt_log="$workdir/corrupt-install.log"
 mkdir -p "$corrupt_dir"
 cp "$release_dir"/* "$corrupt_dir/"
-printf 'not a valid archive\n' > "$corrupt_dir/ComputerPoliceCLI-$version-linux-x86_64.tar.gz"
+printf 'not a valid archive\n' > "$corrupt_dir/ComputerPoliceCLI-$version-linux-$artifact_arch.tar.gz"
 if HOME="$home_dir" \
   SHELL=/bin/bash \
   COMPUTER_POLICE_RELEASE_BASE_URL="file://$corrupt_root" \
   "$repo_root/scripts/install.sh" \
     --version "$version" \
     --install-dir "$workdir/bad-install/bin" \
-    --no-modify-path >/tmp/computer-police-corrupt-install.log 2>&1; then
+    --no-modify-path >"$corrupt_log" 2>&1; then
   echo "corrupt archive install unexpectedly succeeded" >&2
   exit 1
 fi
-if ! rg -q "checksum mismatch" /tmp/computer-police-corrupt-install.log; then
+if ! grep -q "checksum mismatch" "$corrupt_log"; then
   echo "corrupt archive did not report checksum mismatch" >&2
   exit 1
 fi
@@ -67,7 +80,6 @@ HOME="$home_dir" \
 SHELL=/bin/bash \
 COMPUTER_POLICE_INSTALL_SCRIPT="$repo_root/scripts/install.sh" \
 "$install_dir/computer-police" self uninstall \
-  --install-dir "$install_dir" \
   --no-modify-path
 
 if [ -e "$install_dir/computer-police" ]; then
