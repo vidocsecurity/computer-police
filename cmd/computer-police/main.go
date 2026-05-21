@@ -208,6 +208,7 @@ func runLedger(args []string) error {
 
 func printHelp() {
 	fmt.Println(`Computer Police Local Registry Proxy
+Made by Vidoc Security Lab — https://www.vidocsecurity.com
 
 Usage:
   computer-police install [--project]
