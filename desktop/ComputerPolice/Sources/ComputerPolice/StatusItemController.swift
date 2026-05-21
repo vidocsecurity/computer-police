@@ -75,31 +75,75 @@ final class StatusItemController: NSObject {
         statusItem.isVisible = true
     }
 
-    private static func makeMenuBarShieldImage(showsAlert: Bool) -> NSImage {
-        // Shield silhouette with an inset 5-point sheriff star punched out as
-        // negative space. Drawn as a template image so macOS handles the tint
-        // appropriately for light/dark menu bars. A small filled dot in the
+    private static func makeMenuBarOfficerImage(showsAlert: Bool) -> NSImage {
+        // A chibi compact Macintosh — same mascot as Officer Mac in the
+        // popover — drawn as a template image so macOS tints it correctly
+        // for light and dark menu bars. The case is filled; the CRT screen
+        // and floppy slot are subtracted; the eyes and smile sit inside the
+        // screen hole so the even/odd fill rule paints them back as solid
+        // black, giving us a tiny face on the CRT. A small filled dot in the
         // top-right corner indicates an unacknowledged incident.
         let image = NSImage(size: NSSize(width: 21, height: 21), flipped: false) { rect in
-            let shield = shieldPath(in: rect.insetBy(dx: 1.5, dy: 0.5))
-            let starOuterRadius: CGFloat = 4.0
-            let star = sheriffStarPath(
-                center: NSPoint(x: rect.midX, y: rect.midY - 0.4),
-                outerRadius: starOuterRadius,
-                innerRadius: starOuterRadius * 0.42)
-
             let combined = NSBezierPath()
-            combined.append(shield)
-            combined.append(star.reversed)
             combined.windingRule = .evenOdd
+
+            let body = NSBezierPath(
+                roundedRect: NSRect(
+                    x: rect.minX + 2,
+                    y: rect.minY + 1.5,
+                    width: 17,
+                    height: 18),
+                xRadius: 2,
+                yRadius: 2)
+            combined.append(body)
+
+            let screen = NSRect(
+                x: rect.minX + 4,
+                y: rect.minY + 9,
+                width: 13,
+                height: 8)
+            combined.append(NSBezierPath(rect: screen))
+
+            let floppy = NSRect(
+                x: rect.minX + 5.5,
+                y: rect.minY + 5,
+                width: 10,
+                height: 1)
+            combined.append(NSBezierPath(rect: floppy))
+
+            let eyeY: CGFloat = rect.minY + 12.5
+            let leftEye = NSBezierPath(ovalIn: NSRect(
+                x: rect.minX + 7,
+                y: eyeY,
+                width: 2,
+                height: 2))
+            let rightEye = NSBezierPath(ovalIn: NSRect(
+                x: rect.minX + 12,
+                y: eyeY,
+                width: 2,
+                height: 2))
+            combined.append(leftEye)
+            combined.append(rightEye)
+
+            // Short, flat smile. Susan Kare's happy Mac taught us a tiny
+            // definite mouth reads better at icon scale than a thin curve.
+            let smile = NSBezierPath(
+                roundedRect: NSRect(
+                    x: rect.minX + 9.0,
+                    y: rect.minY + 10.3,
+                    width: 3,
+                    height: 1),
+                xRadius: 0.5,
+                yRadius: 0.5)
+            combined.append(smile)
 
             NSColor.black.setFill()
             combined.fill()
 
             if showsAlert {
                 let dot = NSBezierPath(ovalIn: NSRect(
-                    x: rect.maxX - 5.5,
-                    y: rect.maxY - 5.5,
+                    x: rect.maxX - 5,
+                    y: rect.maxY - 5,
                     width: 4,
                     height: 4))
                 NSColor.black.setFill()
@@ -109,52 +153,6 @@ final class StatusItemController: NSObject {
         }
         image.isTemplate = true
         return image
-    }
-
-    private static func shieldPath(in rect: NSRect) -> NSBezierPath {
-        let path = NSBezierPath()
-        let topY = rect.maxY
-        let shoulderY = rect.maxY - rect.height * 0.15
-        let waistY = rect.minY + rect.height * 0.45
-        let pointY = rect.minY
-        path.move(to: NSPoint(x: rect.minX, y: topY))
-        path.line(to: NSPoint(x: rect.maxX, y: topY))
-        path.line(to: NSPoint(x: rect.maxX, y: shoulderY))
-        path.line(to: NSPoint(x: rect.maxX, y: waistY))
-        path.curve(
-            to: NSPoint(x: rect.midX, y: pointY),
-            controlPoint1: NSPoint(x: rect.maxX, y: pointY + rect.height * 0.10),
-            controlPoint2: NSPoint(x: rect.midX + rect.width * 0.20, y: pointY))
-        path.curve(
-            to: NSPoint(x: rect.minX, y: waistY),
-            controlPoint1: NSPoint(x: rect.midX - rect.width * 0.20, y: pointY),
-            controlPoint2: NSPoint(x: rect.minX, y: pointY + rect.height * 0.10))
-        path.line(to: NSPoint(x: rect.minX, y: shoulderY))
-        path.close()
-        return path
-    }
-
-    private static func sheriffStarPath(
-        center: NSPoint,
-        outerRadius: CGFloat,
-        innerRadius: CGFloat) -> NSBezierPath
-    {
-        let path = NSBezierPath()
-        let points = 5
-        let total = points * 2
-        for i in 0..<total {
-            let angle = (Double(i) / Double(total)) * 2 * .pi - .pi / 2
-            let radius = i.isMultiple(of: 2) ? outerRadius : innerRadius
-            let x = center.x + CGFloat(cos(angle)) * radius
-            let y = center.y - CGFloat(sin(angle)) * radius
-            if i == 0 {
-                path.move(to: NSPoint(x: x, y: y))
-            } else {
-                path.line(to: NSPoint(x: x, y: y))
-            }
-        }
-        path.close()
-        return path
     }
 
     private func bindStore() {
@@ -220,7 +218,7 @@ final class StatusItemController: NSObject {
 
     private func updateIcon() {
         guard let button = statusItem.button else { return }
-        button.image = Self.makeMenuBarShieldImage(showsAlert: malwareBlinkTask != nil)
+        button.image = Self.makeMenuBarOfficerImage(showsAlert: malwareBlinkTask != nil)
         // Subtle dot pulse instead of recoloring the entire badge.
         button.alphaValue = malwareBlinkTask == nil || malwareBlinkOn ? 1.0 : 0.55
         button.toolTip = "Computer Police: \(store.protectionState.title)"
