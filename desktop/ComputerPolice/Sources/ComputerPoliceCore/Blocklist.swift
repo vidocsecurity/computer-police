@@ -27,13 +27,15 @@ public struct Blocklist: Codable, Equatable, Sendable {
     }
 
     public static func loadBundled() -> Blocklist {
-        guard let url = Bundle.module.url(forResource: "blocklist", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode(Blocklist.self, from: data)
-        else {
-            return Blocklist(entries: [])
+        for url in bundledResourceCandidates() {
+            guard let data = try? Data(contentsOf: url),
+                  let decoded = try? JSONDecoder().decode(Blocklist.self, from: data)
+            else {
+                continue
+            }
+            return decoded
         }
-        return decoded
+        return Blocklist(entries: [])
     }
 
     public func match(package: String?, version: String?) -> BlocklistEntry? {
@@ -45,5 +47,17 @@ public struct Blocklist: Codable, Equatable, Sendable {
 
     public func match(event: PackageEvent) -> BlocklistEntry? {
         match(package: event.request.package, version: event.request.version)
+    }
+
+    private static func bundledResourceCandidates() -> [URL] {
+        let resourceBundleName = "ComputerPolice_ComputerPoliceCore.bundle"
+        let appResourceURL = Bundle.main.resourceURL?
+            .appendingPathComponent(resourceBundleName, isDirectory: true)
+            .appendingPathComponent("blocklist.json")
+        let sourceTreeURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Resources", isDirectory: true)
+            .appendingPathComponent("blocklist.json")
+        return [appResourceURL, sourceTreeURL].compactMap { $0 }
     }
 }
