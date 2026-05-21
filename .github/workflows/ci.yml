@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go (${{ matrix.os }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: macos-14
+            arch: arm64
+          - os: macos-13
+            arch: amd64
+          - os: windows-latest
+            arch: amd64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Show Go environment
+        run: go env GOOS GOARCH GOVERSION
+
+      - name: Test Go packages
+        run: go test ./...
+
+      - name: Build CLI
+        shell: bash
+        run: |
+          ext=""
+          if [[ "${{ runner.os }}" == "Windows" ]]; then ext=".exe"; fi
+          go build -o "computer-police${ext}" ./cmd/package-police
+
+  swift:
+    name: Swift macOS app (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-13]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Build Swift package
+        working-directory: desktop/PackagePolice
+        run: swift build
+
+      - name: Test Swift package
+        working-directory: desktop/PackagePolice
+        run: swift test
+
+      - name: Package macOS app
+        run: VERSION=ci ./scripts/release/package_macos_app.sh
