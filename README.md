@@ -1,9 +1,3 @@
-<p align="center">
-  <a href="https://github.com/vidocsecurity/computer-police">
-    <img src="docs/hero.png" alt="Computer Police" width="640" />
-  </a>
-</p>
-
 <h1 align="center">Computer Police</h1>
 
 <p align="center"><strong>A local supply-chain firewall for your computer — and every agent on it.</strong></p>
@@ -19,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="Computer Police menu-bar app showing protection on and a blocked install" width="520" />
+  <img src="docs/screenshot.png" alt="Computer Police menu-bar app on macOS: patrol active, install ledger with caught and blocked package events" width="560" />
 </p>
 
 ---
