@@ -40,7 +40,16 @@ struct ComputerPoliceApp: App {
         .windowStyle(.hiddenTitleBar)
 
         Settings {
-            PreferencesView(store: store, protection: protection, refreshLoop: refreshLoop)
+            PreferencesView(
+                store: store,
+                protection: protection,
+                refreshLoop: refreshLoop,
+                onOpen: {
+                    appDelegate.beginVisibleUISession()
+                },
+                onClose: {
+                    appDelegate.endVisibleUISession()
+                })
                 .frame(minWidth: 540, minHeight: 380)
         }
     }

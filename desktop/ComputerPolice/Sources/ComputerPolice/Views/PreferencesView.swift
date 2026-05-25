@@ -5,9 +5,12 @@ struct PreferencesView: View {
     @ObservedObject var store: SecurityStore
     @ObservedObject var protection: ProtectionController
     let refreshLoop: RefreshLoop
+    let onOpen: () -> Void
+    let onClose: () -> Void
 
     @State private var section: Section = .patrol
     @State private var launchAtLogin = false
+    @State private var didOpen = false
 
     enum Section: String, CaseIterable, Identifiable {
         case patrol, refresh, cli, about
@@ -42,6 +45,14 @@ struct PreferencesView: View {
         .retroSurface()
         .onAppear {
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            guard !didOpen else { return }
+            didOpen = true
+            onOpen()
+        }
+        .onDisappear {
+            guard didOpen else { return }
+            didOpen = false
+            onClose()
         }
     }
 
@@ -110,13 +121,11 @@ struct PreferencesView: View {
         BeveledPanel(style: .raised, padding: 12) {
             VStack(alignment: .leading, spacing: 10) {
                 SectionLabel(text: "Refresh Cadence")
-                Text("How often Officer Mac polls the registry proxy for stats.")
+                Text("How often Officer Mac polls the registry proxy for stats while the UI is open.")
                     .font(.retroBody)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Picker("", selection: $store.refreshInterval) {
-                    Text("2 seconds").tag(TimeInterval(2))
-                    Text("5 seconds").tag(TimeInterval(5))
                     Text("15 seconds").tag(TimeInterval(15))
                     Text("30 seconds").tag(TimeInterval(30))
                     Text("1 minute").tag(TimeInterval(60))

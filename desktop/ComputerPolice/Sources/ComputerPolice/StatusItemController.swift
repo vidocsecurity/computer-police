@@ -10,7 +10,8 @@ final class StatusItemController: NSObject {
     private let popover = NSPopover()
     private let store: SecurityStore
     private let protection: ProtectionController
-    private let refresh: () -> Void
+    private let onOpen: () -> Void
+    private let onClose: () -> Void
     private var cancellables = Set<AnyCancellable>()
     private var lastKnownScreenCount: Int
     private var pendingScreenChangePreviousCount: Int?
@@ -19,12 +20,18 @@ final class StatusItemController: NSObject {
     private var malwareBlinkDeadline: Date?
     private var malwareBlinkOn = true
 
-    init(store: SecurityStore, protection: ProtectionController, refresh: @escaping () -> Void) {
+    init(
+        store: SecurityStore,
+        protection: ProtectionController,
+        onOpen: @escaping () -> Void,
+        onClose: @escaping () -> Void)
+    {
         AppLog.devLog("statusItem", "Initializing status item controller")
         AppLog.statusItem.info("Initializing status item controller")
         self.store = store
         self.protection = protection
-        self.refresh = refresh
+        self.onOpen = onOpen
+        self.onClose = onClose
         self.statusBar = .system
         self.statusItem = Self.makeStatusItem(statusBar: statusBar)
         self.lastKnownScreenCount = NSScreen.screens.count
@@ -59,6 +66,7 @@ final class StatusItemController: NSObject {
             width: Retro.Metrics.popoverWidth,
             height: Retro.Metrics.popoverHeight)
         popover.contentViewController = NSHostingController(rootView: DashboardView(store: store, protection: protection))
+        popover.delegate = self
     }
 
     private func configureButton() {
@@ -211,7 +219,7 @@ final class StatusItemController: NSObject {
         AppLog.devLog("statusItem", "Presenting popover and refreshing state")
         AppLog.statusItem.debug("Presenting popover and refreshing state")
         stopMalwareBlink()
-        refresh()
+        onOpen()
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }
@@ -381,6 +389,15 @@ private struct StatusItemVisibilitySnapshot: CustomStringConvertible {
 
     private static func screenNumber(_ screen: NSScreen) -> NSNumber? {
         screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber
+    }
+}
+
+extension StatusItemController: NSPopoverDelegate {
+    nonisolated func popoverDidClose(_ notification: Notification) {
+        _ = notification
+        Task { @MainActor [weak self] in
+            self?.onClose()
+        }
     }
 }
 

@@ -102,7 +102,8 @@ final class SecurityStore: ObservableObject {
         self.notificationsEnabled = defaults.object(forKey: Keys.notificationsEnabled) as? Bool ?? true
         self.keepProxyRunningOnQuit = defaults.object(forKey: Keys.keepProxyRunningOnQuit) as? Bool ?? false
         self.autoEnableAtLaunch = defaults.object(forKey: Keys.autoEnableAtLaunch) as? Bool ?? true
-        self.refreshInterval = defaults.object(forKey: Keys.refreshInterval) as? TimeInterval ?? 2
+        let savedRefreshInterval = defaults.object(forKey: Keys.refreshInterval) as? TimeInterval ?? 30
+        self.refreshInterval = max(savedRefreshInterval, 15)
         self.userConfiguredBinaryPath = defaults.string(forKey: Keys.userConfiguredBinaryPath) ?? ""
     }
 
