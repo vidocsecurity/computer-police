@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notifier: Notifier?
     private var statusController: StatusItemController?
     private var didFinishLaunching = false
+    private var visibleUISessionCount = 0
 
     func configure(
         store: SecurityStore,
@@ -39,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startIfReady() {
         AppLog.lifecycle.debug("startIfReady called; didFinishLaunching=\(self.didFinishLaunching, privacy: .public), hasStatusController=\((self.statusController != nil), privacy: .public)")
         guard didFinishLaunching, statusController == nil else { return }
-        guard let store, let protection, let refreshLoop, let eventStreamLoop, let notifier else {
+        guard let store, let protection, let notifier, refreshLoop != nil, eventStreamLoop != nil else {
             AppLog.devLog("lifecycle", "startIfReady waiting for dependencies")
             AppLog.lifecycle.debug("startIfReady waiting for dependencies")
             return
@@ -47,10 +48,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppLog.devLog("lifecycle", "Starting app services")
         AppLog.lifecycle.info("Starting app services")
         notifier.requestAuthorization()
-        let controller = StatusItemController(store: store, protection: protection) { [weak refreshLoop] in
-            AppLog.refresh.debug("Manual popover refresh requested")
-            refreshLoop?.refresh()
-        }
+        let controller = StatusItemController(
+            store: store,
+            protection: protection,
+            onOpen: { [weak self] in
+                self?.beginVisibleUISession()
+            },
+            onClose: { [weak self] in
+                self?.endVisibleUISession()
+            })
         statusController = controller
         notifier.onTap = { [weak controller, weak store] tap in
             AppLog.devLog("notifications", "Notification tap received; eventID=\(tap.eventID ?? "-"), advisoryID=\(tap.advisoryID ?? "-")")
@@ -61,15 +67,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppLog.devLog("lifecycle", "Starting protection monitoring")
         AppLog.lifecycle.info("Starting protection monitoring")
         protection.startMonitoring()
-        AppLog.devLog("lifecycle", "Starting refresh loop")
-        AppLog.lifecycle.info("Starting refresh loop")
-        refreshLoop.start()
-        AppLog.devLog("lifecycle", "Starting event stream loop")
-        AppLog.lifecycle.info("Starting event stream loop")
-        eventStreamLoop.start()
         AppLog.devLog("lifecycle", "Auto-enable check")
         AppLog.lifecycle.info("Auto-enable check")
         protection.autoEnableIfNeeded()
+    }
+
+    func beginVisibleUISession() {
+        visibleUISessionCount += 1
+        guard visibleUISessionCount == 1 else { return }
+        AppLog.devLog("lifecycle", "Starting visible UI services")
+        AppLog.lifecycle.info("Starting visible UI services")
+        protection?.startLiveMonitoring()
+        refreshLoop?.start()
+        eventStreamLoop?.start()
+    }
+
+    func endVisibleUISession() {
+        guard visibleUISessionCount > 0 else { return }
+        visibleUISessionCount -= 1
+        guard visibleUISessionCount == 0 else { return }
+        AppLog.devLog("lifecycle", "Stopping visible UI services")
+        AppLog.lifecycle.info("Stopping visible UI services")
+        eventStreamLoop?.stop()
+        refreshLoop?.stop()
+        protection?.stopLiveMonitoring()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

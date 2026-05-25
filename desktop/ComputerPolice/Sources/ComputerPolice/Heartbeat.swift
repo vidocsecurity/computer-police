@@ -22,6 +22,10 @@ final class Heartbeat {
         beat()
     }
 
+    func refreshOnce() {
+        beat()
+    }
+
     func stop() {
         timer?.invalidate()
         timer = nil

@@ -29,6 +29,7 @@ final class RefreshLoop {
     }
 
     func restartTimer() {
+        guard timer != nil else { return }
         start()
     }
 

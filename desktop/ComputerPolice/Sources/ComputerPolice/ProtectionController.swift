@@ -29,11 +29,21 @@ final class ProtectionController: ObservableObject {
     func startMonitoring() {
         resolveBinary()
         store.registryStatus = registryProbe.status()
+        heartbeat.refreshOnce()
+    }
+
+    func startLiveMonitoring() {
+        resolveBinary()
+        store.registryStatus = registryProbe.status()
         heartbeat.start()
     }
 
-    func stopMonitoring() {
+    func stopLiveMonitoring() {
         heartbeat.stop()
+    }
+
+    func stopMonitoring() {
+        stopLiveMonitoring()
         restartTask?.cancel()
         restartTask = nil
     }
