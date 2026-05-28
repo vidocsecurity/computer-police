@@ -105,6 +105,30 @@ func TestDisableGlobalRestoresBackupsWithoutPackageManagers(t *testing.T) {
 	}
 }
 
+func TestDisableGlobalScrubsStaleProxyRegistryWithoutBackup(t *testing.T) {
+	home := t.TempDir()
+	setTestHome(t, home)
+	t.Setenv("PATH", t.TempDir())
+
+	bunfig := filepath.Join(home, ".bunfig.toml")
+	if err := os.WriteFile(bunfig, []byte("[install]\nregistry = \"http://127.0.0.1:4873\"\nlinker = \"hoisted\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := DisableProject(&out, DisableOptions{Global: true}); err != nil {
+		t.Fatalf("DisableProject failed without backup: %v\n%s", err, out.String())
+	}
+
+	restored := readFile(t, bunfig)
+	if strings.Contains(restored, "127.0.0.1:4873") {
+		t.Fatalf("stale proxy registry was not removed:\n%s", restored)
+	}
+	if !strings.Contains(restored, `linker = "hoisted"`) {
+		t.Fatalf("unrelated bun config was removed:\n%s", restored)
+	}
+}
+
 func TestEnableDisableProjectRemovesCreatedRegistryFiles(t *testing.T) {
 	project := t.TempDir()
 	fakeBin := t.TempDir()
