@@ -753,7 +753,66 @@ func restoreFile(path string) error {
 		_ = os.Remove(marker)
 		return nil
 	}
+	if err := scrubStaleProxyRegistry(path); err != nil {
+		return err
+	}
 	return nil
+}
+
+func scrubStaleProxyRegistry(path string) error {
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	content := string(data)
+	if !strings.Contains(content, "127.0.0.1:4873") && !strings.Contains(content, "localhost:4873") {
+		return nil
+	}
+	lines := splitLines(content)
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.Contains(line, "127.0.0.1:4873") || strings.Contains(line, "localhost:4873") {
+			continue
+		}
+		out = append(out, line)
+	}
+	out = dropEmptyTOMLSection(out, "[install]")
+	if len(nonEmptyTrailing(out)) == 0 {
+		return os.Remove(path)
+	}
+	return os.WriteFile(path, []byte(strings.Join(nonEmptyTrailing(out), "\n")+"\n"), 0o644)
+}
+
+func dropEmptyTOMLSection(lines []string, section string) []string {
+	out := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); {
+		if strings.TrimSpace(lines[i]) != section {
+			out = append(out, lines[i])
+			i++
+			continue
+		}
+		j := i + 1
+		for j < len(lines) {
+			trimmed := strings.TrimSpace(lines[j])
+			if strings.HasPrefix(trimmed, "[") {
+				break
+			}
+			if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+				out = append(out, lines[i])
+				break
+			}
+			j++
+		}
+		if j == len(lines) || strings.HasPrefix(strings.TrimSpace(lines[j]), "[") {
+			i = j
+			continue
+		}
+		i++
+	}
+	return out
 }
 
 func splitLines(content string) []string {

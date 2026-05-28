@@ -173,6 +173,7 @@ func (p *RegistryProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	copyHeaders(req.Header, r.Header)
+	applyUpstreamAuth(req, upstream)
 	req.Host = upstream.Host
 
 	resp, err := p.client.Do(req)
