@@ -175,3 +175,5 @@ For development conventions and CI rules, see [`AGENTS.md`](AGENTS.md).
 - Security reports: [GitHub Security Advisories](https://github.com/vidocsecurity/computer-police/security/advisories/new) or [security@vidocsecurity.com](mailto:security@vidocsecurity.com)
 - License: [`MIT`](LICENSE)
 - Advisory data: [OSV.dev](https://osv.dev)
+
+- 
